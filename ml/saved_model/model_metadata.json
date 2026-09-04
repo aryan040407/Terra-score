@@ -1,0 +1,426 @@
+{
+  "model_type": "RandomForestClassifier",
+  "model_version": "1.0.0",
+  "trained_at": "2026-09-04T16:24:04.196188+00:00",
+  "target": "crop_failure (>=20% yield drop, simulated label)",
+  "training_samples": 1200,
+  "test_samples": 300,
+  "n_features": 28,
+  "feature_columns": [
+    "temperature",
+    "precipitation",
+    "soil_health",
+    "soil_moisture",
+    "humidity",
+    "drought_index",
+    "flood_risk",
+    "pest_risk",
+    "historical_yield",
+    "yield_variation",
+    "weather_volatility",
+    "crop_price",
+    "previous_loss",
+    "climate_resilience",
+    "farm_area",
+    "irrigation_level",
+    "water_stress",
+    "heat_stress",
+    "crop_Wheat",
+    "crop_Rice",
+    "crop_Maize",
+    "crop_Cotton",
+    "crop_Sugarcane",
+    "crop_Pulses",
+    "crop_Mustard",
+    "season_Rabi",
+    "season_Kharif",
+    "season_Annual"
+  ],
+  "grouped_feature_count": 19,
+  "positive_rate": 0.4033,
+  "metrics": {
+    "model": "RandomForestClassifier",
+    "accuracy": 0.7567,
+    "precision": 0.6846,
+    "recall": 0.7355,
+    "f1": 0.7092,
+    "roc_auc": 0.8198,
+    "brier": 0.1727,
+    "prob_mae_vs_risk_score": 0.1079,
+    "prob_rmse_vs_risk_score": 0.134,
+    "cv_roc_auc_mean": 0.8342,
+    "cv_roc_auc_std": 0.0158
+  },
+  "model_comparison": [
+    {
+      "model": "RandomForestClassifier",
+      "accuracy": 0.7567,
+      "precision": 0.6846,
+      "recall": 0.7355,
+      "f1": 0.7092,
+      "roc_auc": 0.8198,
+      "brier": 0.1727,
+      "prob_mae_vs_risk_score": 0.1079,
+      "prob_rmse_vs_risk_score": 0.134,
+      "cv_roc_auc_mean": 0.8342,
+      "cv_roc_auc_std": 0.0158
+    },
+    {
+      "model": "GradientBoostingClassifier",
+      "accuracy": 0.7533,
+      "precision": 0.6975,
+      "recall": 0.686,
+      "f1": 0.6917,
+      "roc_auc": 0.8302,
+      "brier": 0.1652,
+      "prob_mae_vs_risk_score": 0.089,
+      "prob_rmse_vs_risk_score": 0.1221,
+      "cv_roc_auc_mean": 0.829,
+      "cv_roc_auc_std": 0.0241
+    },
+    {
+      "model": "LogisticRegression",
+      "accuracy": 0.74,
+      "precision": 0.6777,
+      "recall": 0.6777,
+      "f1": 0.6777,
+      "roc_auc": 0.8358,
+      "brier": 0.1618,
+      "prob_mae_vs_risk_score": 0.0627,
+      "prob_rmse_vs_risk_score": 0.0788,
+      "cv_roc_auc_mean": 0.8417,
+      "cv_roc_auc_std": 0.0191
+    }
+  ],
+  "feature_importance": [
+    {
+      "feature": "climate_resilience",
+      "label": "Climate resilience",
+      "importance": 0.1847
+    },
+    {
+      "feature": "soil_moisture",
+      "label": "Soil moisture",
+      "importance": 0.1063
+    },
+    {
+      "feature": "weather_volatility",
+      "label": "Rainfall / weather volatility",
+      "importance": 0.0949
+    },
+    {
+      "feature": "drought_index",
+      "label": "Drought index",
+      "importance": 0.0797
+    },
+    {
+      "feature": "irrigation_level",
+      "label": "Irrigation",
+      "importance": 0.0707
+    },
+    {
+      "feature": "soil_health",
+      "label": "Soil health",
+      "importance": 0.0645
+    },
+    {
+      "feature": "yield_variation",
+      "label": "Yield variability",
+      "importance": 0.064
+    },
+    {
+      "feature": "crop_type",
+      "label": "Crop type",
+      "importance": 0.0463
+    },
+    {
+      "feature": "flood_risk",
+      "label": "Flood risk",
+      "importance": 0.042
+    },
+    {
+      "feature": "pest_risk",
+      "label": "Pest risk",
+      "importance": 0.0386
+    },
+    {
+      "feature": "previous_loss",
+      "label": "Previous loss history",
+      "importance": 0.0372
+    },
+    {
+      "feature": "water_stress",
+      "label": "Water stress (crop need vs rainfall)",
+      "importance": 0.0312
+    },
+    {
+      "feature": "precipitation",
+      "label": "Rainfall",
+      "importance": 0.0297
+    },
+    {
+      "feature": "farm_area",
+      "label": "Farm size",
+      "importance": 0.0251
+    },
+    {
+      "feature": "temperature",
+      "label": "Temperature",
+      "importance": 0.0249
+    },
+    {
+      "feature": "historical_yield",
+      "label": "Historical yield",
+      "importance": 0.0247
+    },
+    {
+      "feature": "humidity",
+      "label": "Humidity",
+      "importance": 0.024
+    },
+    {
+      "feature": "season",
+      "label": "Season",
+      "importance": 0.008
+    },
+    {
+      "feature": "heat_stress",
+      "label": "Heat stress",
+      "importance": 0.0034
+    }
+  ],
+  "permutation_importance": [
+    {
+      "feature": "climate_resilience",
+      "label": "Climate resilience",
+      "importance": 0.3271
+    },
+    {
+      "feature": "weather_volatility",
+      "label": "Rainfall / weather volatility",
+      "importance": 0.1663
+    },
+    {
+      "feature": "water_stress",
+      "label": "Water stress (crop need vs rainfall)",
+      "importance": 0.0734
+    },
+    {
+      "feature": "soil_health",
+      "label": "Soil health",
+      "importance": 0.0732
+    },
+    {
+      "feature": "soil_moisture",
+      "label": "Soil moisture",
+      "importance": 0.0689
+    },
+    {
+      "feature": "drought_index",
+      "label": "Drought index",
+      "importance": 0.0626
+    },
+    {
+      "feature": "irrigation_level",
+      "label": "Irrigation",
+      "importance": 0.0542
+    },
+    {
+      "feature": "flood_risk",
+      "label": "Flood risk",
+      "importance": 0.0385
+    },
+    {
+      "feature": "yield_variation",
+      "label": "Yield variability",
+      "importance": 0.0374
+    },
+    {
+      "feature": "temperature",
+      "label": "Temperature",
+      "importance": 0.0293
+    },
+    {
+      "feature": "precipitation",
+      "label": "Rainfall",
+      "importance": 0.0195
+    },
+    {
+      "feature": "crop_type",
+      "label": "Crop type",
+      "importance": 0.0194
+    },
+    {
+      "feature": "previous_loss",
+      "label": "Previous loss history",
+      "importance": 0.0162
+    },
+    {
+      "feature": "pest_risk",
+      "label": "Pest risk",
+      "importance": 0.0093
+    },
+    {
+      "feature": "season",
+      "label": "Season",
+      "importance": 0.0043
+    },
+    {
+      "feature": "historical_yield",
+      "label": "Historical yield",
+      "importance": 0.0005
+    },
+    {
+      "feature": "humidity",
+      "label": "Humidity",
+      "importance": 0.0
+    },
+    {
+      "feature": "farm_area",
+      "label": "Farm size",
+      "importance": 0.0
+    },
+    {
+      "feature": "heat_stress",
+      "label": "Heat stress",
+      "importance": 0.0
+    }
+  ],
+  "reference_stats": {
+    "temperature": {
+      "mean": 27.141166666666663,
+      "std": 2.529341801176386
+    },
+    "precipitation": {
+      "mean": 74.73100000000001,
+      "std": 46.65491102698386
+    },
+    "soil_health": {
+      "mean": 60.657916666666665,
+      "std": 12.758884287687975
+    },
+    "soil_moisture": {
+      "mean": 31.10733333333333,
+      "std": 10.587443404985315
+    },
+    "humidity": {
+      "mean": 59.1565,
+      "std": 11.700036330076257
+    },
+    "drought_index": {
+      "mean": 0.43092166666666665,
+      "std": 0.17372027652508554
+    },
+    "flood_risk": {
+      "mean": 0.31033750000000004,
+      "std": 0.15218304765559398
+    },
+    "pest_risk": {
+      "mean": 0.4211475,
+      "std": 0.16032805425512517
+    },
+    "historical_yield": {
+      "mean": 9.581633333333334,
+      "std": 21.303415780937616
+    },
+    "yield_variation": {
+      "mean": 0.40556833333333336,
+      "std": 0.16928993245784546
+    },
+    "weather_volatility": {
+      "mean": 0.38957583333333334,
+      "std": 0.17613490711353083
+    },
+    "crop_price": {
+      "mean": 3558.6125,
+      "std": 2180.305832204595
+    },
+    "previous_loss": {
+      "mean": 0.2944858333333334,
+      "std": 0.1559183822311218
+    },
+    "climate_resilience": {
+      "mean": 0.5385533333333333,
+      "std": 0.1444931337825924
+    },
+    "farm_area": {
+      "mean": 3.1241666666666665,
+      "std": 2.662921816236515
+    },
+    "irrigation_level": {
+      "mean": 1.4541666666666666,
+      "std": 0.49810245994781094
+    },
+    "water_stress": {
+      "mean": 0.20275666666666667,
+      "std": 0.22269556789392095
+    },
+    "heat_stress": {
+      "mean": 0.007836458333333336,
+      "std": 0.027096614471241603
+    },
+    "crop_Wheat": {
+      "mean": 0.1925,
+      "std": 0.3944279332088599
+    },
+    "crop_Rice": {
+      "mean": 0.23166666666666666,
+      "std": 0.4220730706323449
+    },
+    "crop_Maize": {
+      "mean": 0.125,
+      "std": 0.33085679961509473
+    },
+    "crop_Cotton": {
+      "mean": 0.12916666666666668,
+      "std": 0.3355241460750454
+    },
+    "crop_Sugarcane": {
+      "mean": 0.08833333333333333,
+      "std": 0.28389737639240514
+    },
+    "crop_Pulses": {
+      "mean": 0.16166666666666665,
+      "std": 0.3682982376853357
+    },
+    "crop_Mustard": {
+      "mean": 0.07166666666666667,
+      "std": 0.25804271724947686
+    },
+    "season_Rabi": {
+      "mean": 0.42583333333333334,
+      "std": 0.4946748678775251
+    },
+    "season_Kharif": {
+      "mean": 0.48583333333333334,
+      "std": 0.5000076452014898
+    },
+    "season_Annual": {
+      "mean": 0.08833333333333333,
+      "std": 0.28389737639240514
+    }
+  },
+  "hyperparameters": {
+    "bootstrap": true,
+    "ccp_alpha": 0.0,
+    "class_weight": "balanced_subsample",
+    "criterion": "gini",
+    "max_depth": 8,
+    "max_features": "sqrt",
+    "max_leaf_nodes": null,
+    "max_samples": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 6,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "n_estimators": 400,
+    "n_jobs": -1,
+    "oob_score": false,
+    "random_state": 42,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "training_seconds": 55.86,
+  "data_source": "Simulated / synthetic demo data"
+}
