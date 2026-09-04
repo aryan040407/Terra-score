@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: terrascore-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: TERRASCORE_DB_PATH
+        value: /tmp/terrascore.db
