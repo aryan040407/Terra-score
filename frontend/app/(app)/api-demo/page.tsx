@@ -48,7 +48,7 @@ export default function ApiDemoPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
-        <div><h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">API for Lenders & Insurers</h1><p className="mt-1 text-sm text-charcoal-500">One REST call returns a TerraScore, its risk band and the reasons behind it.</p></div>
+        <div><h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">API for Climate Risk Intelligence</h1><p className="mt-1 text-sm text-charcoal-500">Enterprise REST API delivering TerraScore, risk bands, and explainable climate risk drivers.</p></div>
         <div className="flex gap-2"><Tag><Lock size={11} /> API-key auth (roadmap)</Tag><Tag><Zap size={11} /> ~20 ms p50, local</Tag><a href="/docs" target="_blank" className="btn-secondary text-xs" onClick={(e) => { e.preventDefault(); window.open((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/docs", "_blank"); }}><BookOpen size={13} /> OpenAPI docs</a></div>
       </div>
 
@@ -56,7 +56,7 @@ export default function ApiDemoPage() {
         <Card title="Example: score a farm" subtitle="GET /api/terrascore/FARM-001" icon={Code2} action={<button onClick={() => copy(sample)} className="btn-secondary text-xs">{copied ? <Check size={13} /> : <Copy size={13} />} Copy JSON</button>}>
           <pre className="max-h-[420px] overflow-auto rounded-xl bg-charcoal-950 p-4 text-[12.5px] leading-relaxed text-emerald-200"><code>{sample || "// loading…"}</code></pre>
         </Card>
-        <Card title="Integrate in minutes" subtitle="Drop-in for credit decisioning or underwriting pipelines" icon={KeyRound} action={<Segmented value={lang} onChange={setLang} options={[{ value: "curl", label: "cURL" }, { value: "python", label: "Python" }, { value: "js", label: "JavaScript" }]} />}>
+        <Card title="Integrate in minutes" subtitle="Drop-in for credit decisioning, risk assessment, and policy pipelines" icon={KeyRound} action={<Segmented value={lang} onChange={setLang} options={[{ value: "curl", label: "cURL" }, { value: "python", label: "Python" }, { value: "js", label: "JavaScript" }]} />}>
           <pre className="overflow-auto rounded-xl bg-charcoal-950 p-4 text-[12.5px] leading-relaxed text-charcoal-100"><code>{snippet}</code></pre>
           <div className="mt-4 grid gap-2 sm:grid-cols-3 text-xs">
             {[["terra_score", "0–1000, higher = more resilient"], ["risk_level", "5 bands for policy rules"], ["top_risk_factors", "explainability for adverse action"]].map(([k, v]) => <div key={k} className="rounded-lg border border-charcoal-100 p-2.5"><code className="font-semibold text-forest-700">{k}</code><p className="mt-0.5 text-charcoal-500">{v}</p></div>)}

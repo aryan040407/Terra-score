@@ -2,10 +2,10 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Sprout, Gauge, AlertTriangle, TrendingDown, Activity, Clock, ShieldCheck, MapPin, Landmark, Umbrella, ArrowRight, Sparkles, Wallet, PieChart as PieIcon } from "lucide-react";
+import { Sprout, Gauge, AlertTriangle, TrendingDown, Activity, Clock, ShieldCheck, MapPin, Landmark, Building2, ArrowRight, Sparkles, Wallet, PieChart as PieIcon, Lightbulb, CheckCircle2 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
-import { useViewMode } from "@/hooks/useViewMode";
+import { getSession, type AuthSession, type UserRole } from "@/lib/auth";
 import { Card, CardSkeleton, ErrorState, RiskBadge, SimTag, Stat, Tag } from "@/components/ui/primitives";
 import { ScoreRing, ScoreBar } from "@/components/ui/ScoreRing";
 import { FactorBars } from "@/components/ui/FactorBars";
@@ -22,9 +22,15 @@ export default function DashboardPage() { return <Suspense fallback={<CardSkelet
 function Dashboard() {
   const params = useSearchParams();
   const demo = params.get("demo") === "1";
-  const { mode } = useViewMode();
+  const [session, setSession] = useState<AuthSession | null>(null);
   const { toast } = useToast();
   const [farmId, setFarmId] = useState("FARM-001");
+
+  useEffect(() => {
+    setSession(getSession());
+  }, []);
+
+  const role: UserRole = session?.role || "farmer";
 
   const summary = useApi("summary", api.summary, { ttl: 60_000 });
   const farm = useApi(`farm-${farmId}`, () => api.farm(farmId));
@@ -41,8 +47,16 @@ function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">{mode === "lender" ? "Lender Portfolio Overview" : mode === "insurer" ? "Insurer Risk Overview" : "Risk Dashboard"}</h1>
-          <p className="mt-1 text-sm text-charcoal-500">{mode === "farmer" ? "Farm-level climate risk intelligence, explained." : "Demo / Simulated Portfolio — 1,500 synthetic farms across 13 states."}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">
+            {role === "lender" ? "Lender Portfolio Overview" : role === "government" ? "Government Risk Overview" : "Farmer Risk Dashboard"}
+          </h1>
+          <p className="mt-1 text-sm text-charcoal-500">
+            {role === "farmer"
+              ? "Farm-level climate risk intelligence, explained."
+              : role === "lender"
+                ? "Portfolio climate exposure, credit risk, and farm-level vulnerability."
+                : "Regional climate vulnerability and agricultural adaptation monitoring."}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <SimTag text="Data source: Simulated / synthetic" />
@@ -63,8 +77,8 @@ function Dashboard() {
           </div>
         )}
 
-      {mode === "lender" && s && <LenderView s={s} />}
-      {mode === "insurer" && s && <InsurerView s={s} />}
+      {role === "lender" && s && <LenderView s={s} />}
+      {role === "government" && s && <GovernmentOverview s={s} />}
 
       {/* Hero score */}
       <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
@@ -109,6 +123,9 @@ function Dashboard() {
           )}
         </Card>
       </div>
+
+      {/* Farmer recommendations */}
+      {role === "farmer" && f && <FarmerRecommendations f={f} />}
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -178,24 +195,94 @@ function LenderView({ s }: { s: NonNullable<ReturnType<typeof useApi<import("@/l
   );
 }
 
-function InsurerView({ s }: { s: import("@/lib/types").Summary }) {
+function GovernmentOverview({ s }: { s: import("@/lib/types").Summary }) {
   const i = s.insurer;
-  const seg = i.segments.map((x, k) => ({ name: x.segment, value: x.farms, color: ["#059669", "#3e805b", "#d97706", "#ea580c", "#dc2626"][k] }));
-  const exp = [["Drought", i.climate_exposure.drought_exposed], ["Flood", i.climate_exposure.flood_exposed], ["Pest", i.climate_exposure.pest_exposed], ["Heat", i.climate_exposure.heat_exposed]].map(([k, v]) => ({ hazard: k, farms: v }));
+  const seg = i.segments.map((x, k) => ({
+    name: x.segment.replace("Preferred", "High Resilience").replace("Standard", "Moderate Resilience").replace("Sub-standard", "Moderate Vulnerability").replace("High-risk", "High Vulnerability").replace("Decline / Review", "Critical Vulnerability"),
+    value: x.farms,
+    color: ["#059669", "#3e805b", "#d97706", "#ea580c", "#dc2626"][k],
+  }));
+  const exp = [
+    ["Drought", i.climate_exposure.drought_exposed],
+    ["Flood", i.climate_exposure.flood_exposed],
+    ["Pest", i.climate_exposure.pest_exposed],
+    ["Heat", i.climate_exposure.heat_exposed],
+  ].map(([k, v]) => ({ hazard: k, farms: v }));
+
   return (
     <div className="space-y-6 animate-fadeUp">
-      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800"><Umbrella size={14} /><span className="font-semibold">Insurer View · Demo / Simulated Portfolio.</span> Claims proxy = farms with previous-loss index &gt; 0.4. No insurer integration.</div>
+      <div className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2.5 text-xs text-purple-900">
+        <Building2 size={14} />
+        <span className="font-semibold">Government View · Climate Vulnerability Monitoring.</span> Area-level vulnerability tracking, hazard exposure, and policy intervention priorities across 1,500 farms.
+      </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Avg Loss Probability" value={fmt.pct(i.avg_loss_probability * 100)} sub="model-predicted" icon={PieIcon} tone="warn" />
-        <Stat label="Loss Prob > 50%" value={fmt.int(i.farms_loss_prob_over_50)} sub="policies needing review" icon={AlertTriangle} tone="bad" />
-        <Stat label="Historical Claims Proxy" value={fmt.int(i.historical_claims_proxy)} sub={`${fmt.pct(i.historical_claims_rate_pct)} of book`} icon={Activity} />
-        <Stat label="Climate Exposure" value={fmt.int(i.climate_exposure.drought_exposed)} sub="drought-exposed farms" icon={TrendingDown} tone="warn" />
+        <Stat label="Avg Vulnerability Index" value={fmt.pct(i.avg_loss_probability * 100)} sub="model-predicted risk" icon={PieIcon} tone="warn" />
+        <Stat label="High Vulnerability Farms" value={fmt.int(i.farms_loss_prob_over_50)} sub="priority assistance (>50% risk)" icon={AlertTriangle} tone="bad" />
+        <Stat label="Past Climate Distress" value={fmt.int(i.historical_claims_proxy)} sub={`${fmt.pct(i.historical_claims_rate_pct)} of farms affected`} icon={Activity} />
+        <Stat label="Drought-Exposed Farms" value={fmt.int(i.climate_exposure.drought_exposed)} sub="water-stress intervention" icon={TrendingDown} tone="warn" />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card title="Risk Segmentation" subtitle="Policies by underwriting segment"><Donut data={seg} /></Card>
-        <Card title="Crop Risk" subtitle="Average loss probability by crop"><SimpleBars data={i.crop_risk.map((c) => ({ crop: c.crop_type, p: +(c.loss_probability * 100).toFixed(1) }))} xKey="crop" yKey="p" name="Loss prob." format={(v) => `${v}%`} color="#ea580c" /></Card>
-        <Card title="Climate Exposure" subtitle="Farms above hazard thresholds"><SimpleBars data={exp} xKey="hazard" yKey="farms" name="Farms" color="#3e805b" /></Card>
+        <Card title="Vulnerability Classification" subtitle="Farms grouped by resilience band"><Donut data={seg} /></Card>
+        <Card title="Crop Vulnerability" subtitle="Average predicted risk by crop type"><SimpleBars data={i.crop_risk.map((c) => ({ crop: c.crop_type, p: +(c.loss_probability * 100).toFixed(1) }))} xKey="crop" yKey="p" name="Vulnerability" format={(v) => `${v}%`} color="#ea580c" /></Card>
+        <Card title="Climate Hazard Exposure" subtitle="Farms exceeding hazard stress thresholds"><SimpleBars data={exp} xKey="hazard" yKey="farms" name="Farms" color="#3e805b" /></Card>
       </div>
     </div>
+  );
+}
+
+function FarmerRecommendations({ f }: { f: import("@/lib/types").FarmDetail }) {
+  const recs: { title: string; desc: string; impact: string }[] = [];
+
+  if (f.farm.drought_index > 0.4 || f.farm.precipitation < 60) {
+    recs.push({
+      title: "Micro-Irrigation & Moisture Retention",
+      desc: "Install drip irrigation lines or mulching to buffer against dry spells and stabilize root-zone soil moisture.",
+      impact: "Reduces drought stress contribution",
+    });
+  }
+  if (f.farm.pest_risk > 0.4) {
+    recs.push({
+      title: "Integrated Pest Management (IPM)",
+      desc: "Deploy pheromone traps and bio-pesticides ahead of peak humidity to prevent crop infestation.",
+      impact: "Mitigates pest-driven yield risk",
+    });
+  }
+  if (f.farm.soil_health < 65) {
+    recs.push({
+      title: "Organic Soil Conditioning",
+      desc: "Apply compost or green manure to rebuild organic matter and enhance nutrient holding capacity.",
+      impact: "Strengthens baseline resilience",
+    });
+  }
+  if (f.farm.irrigation_status !== "Good") {
+    recs.push({
+      title: "Irrigation Infrastructure Upgrade",
+      desc: `Upgrade from ${f.farm.irrigation_status} to Good irrigation to build resilience against erratic rainfall.`,
+      impact: "Can boost TerraScore by 40–80 pts",
+    });
+  }
+  if (recs.length === 0) {
+    recs.push({
+      title: "Sustain Optimal Soil & Water Practices",
+      desc: "Current soil health and moisture levels are resilient. Continue scheduled crop rotation and timely weeding.",
+      impact: "Maintains high resilience tier",
+    });
+  }
+
+  return (
+    <Card title="Farmer Resilience Recommendations" subtitle="Data-driven actions to improve TerraScore and mitigate risk" icon={Lightbulb}>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {recs.slice(0, 3).map((r, idx) => (
+          <div key={idx} className="rounded-xl border border-charcoal-100 bg-forest-50/40 p-4 transition-all hover:bg-forest-50/70">
+            <div className="flex items-center gap-2 text-forest-800">
+              <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+              <p className="text-sm font-semibold text-charcoal-900">{r.title}</p>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-charcoal-600">{r.desc}</p>
+            <p className="mt-3 inline-block rounded-md bg-emerald-100/80 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">{r.impact}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

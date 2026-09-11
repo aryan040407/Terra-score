@@ -1,4 +1,4 @@
-import type { Alert, DemoData, FarmDetail, FarmList, ModelExplanation, RegionsResponse, Scoring, Summary, Telemetry, WhatIfRequest, WhatIfResponse, HistoryPoint } from "./types";
+import type { Alert, DemoData, FarmDetail, FarmList, ModelExplanation, RegionsResponse, Scoring, Summary, Telemetry, WeatherResponse, WhatIfRequest, WhatIfResponse, HistoryPoint } from "./types";
 
 // Browser always uses relative /api (proxied by Next.js rewrites to FastAPI).
 const BASE = typeof window === "undefined" ? (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") : "";
@@ -10,7 +10,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`${BASE}${path}`, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers || {}) }, cache: "no-store" });
   } catch {
-    throw new ApiError(0, "Cannot reach the TerraScore API. Is the backend running on port 8000?");
+    throw new ApiError(0, "Unable to load TerraScore data right now. Please verify the backend service is running.");
   }
   if (!res.ok) {
     let msg = res.statusText;
@@ -36,6 +36,7 @@ export const api = {
   regions: (f: { state?: string; crop?: string; risk_level?: string } = {}) => request<RegionsResponse>(`/api/regions${qs(f)}`),
   summary: () => request<Summary>("/api/summary"),
   alerts: (limit = 8) => request<{ alerts: Alert[] }>(`/api/alerts?limit=${limit}`),
+  weather: (latitude: number, longitude: number) => request<WeatherResponse>(`/api/weather?latitude=${latitude}&longitude=${longitude}`),
   telemetry: (id: string) => request<Telemetry>(`/api/telemetry/${encodeURIComponent(id)}`),
   model: () => request<ModelExplanation>("/api/model/explanation"),
   demo: () => request<DemoData>("/api/demo-data"),

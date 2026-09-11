@@ -28,6 +28,7 @@ function Simulator() {
   const [input, setInput] = useState(farmId);
   const farm = useApi(`farm-${farmId}`, () => api.farm(farmId));
   const f = farm.data;
+  const liveWeather = useApi(f ? `weather-${f.farm.farm_id}` : null, () => api.weather(f!.farm.latitude, f!.farm.longitude), { ttl: 300_000 });
 
   const [rain, setRain] = useState(0); const [temp, setTemp] = useState(0); const [sm, setSm] = useState(0);
   const [irrigation, setIrrigation] = useState<"None" | "Partial" | "Good" | "">(""); const [drought, setDrought] = useState<number | null>(null); const [pest, setPest] = useState<number | null>(null);
@@ -37,6 +38,18 @@ function Simulator() {
 
   const reset = () => { setRain(0); setTemp(0); setSm(0); if (f) { setDrought(f.farm.drought_index); setPest(f.farm.pest_risk); setIrrigation(f.farm.irrigation_status); } setResult(null); };
   const applyPreset = (p: typeof PRESETS[number]) => { reset(); setRain(p.v.rain ?? 0); setTemp(p.v.temp ?? 0); setSm(p.v.sm ?? 0); if (p.v.drought !== undefined) setDrought(p.v.drought); if (p.v.pest !== undefined) setPest(p.v.pest); if (p.v.irrigation) setIrrigation(p.v.irrigation); };
+  const applyCurrentWeather = () => {
+    if (!f || !liveWeather.data) return;
+    const rainfallDelta = ((liveWeather.data.precipitation ?? f.farm.precipitation) - f.farm.precipitation) / f.farm.precipitation * 100;
+    const tempDelta = (liveWeather.data.temperature ?? f.farm.temperature) - f.farm.temperature;
+    setRain(Number((rainfallDelta || 0).toFixed(1)));
+    setTemp(Number(tempDelta.toFixed(1)));
+    setSm(0);
+    setDrought(f.farm.drought_index);
+    setPest(f.farm.pest_risk);
+    setIrrigation(f.farm.irrigation_status);
+    setResult(null);
+  };
 
   const run = async () => {
     if (!f) return;
@@ -49,9 +62,13 @@ function Simulator() {
         irrigation_status: irrigation && irrigation !== f.farm.irrigation_status ? irrigation : undefined,
         drought_index: dChanged ? drought! : undefined, pest_risk: pChanged ? pest! : undefined });
       setResult(r);
-      toast(r.change < 0 ? "info" : "success", `TerraScore ${r.baseline_terra_score} → ${r.new_terra_score}`, `${r.change >= 0 ? "+" : ""}${r.change} points · ${r.new_risk_level}`);
-    } catch (e) { const m = e instanceof Error ? e.message : "Simulation failed"; setErr(m); toast("error", "Simulation failed", m); }
-    finally { setRunning(false); }
+    } catch (e) {
+      const m = "Prediction could not be generated. Please check your inputs and try again.";
+      setErr(m);
+      toast("error", "Simulation failed", m);
+    } finally {
+      setRunning(false);
+    }
   };
 
   const changed = rain !== 0 || temp !== 0 || sm !== 0 || (f && (irrigation !== f.farm.irrigation_status || Math.abs((drought ?? 0) - f.farm.drought_index) > 1e-6 || Math.abs((pest ?? 0) - f.farm.pest_risk) > 1e-6));
@@ -59,11 +76,17 @@ function Simulator() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
-        <div><h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">What-If AI Simulator</h1><p className="mt-1 text-sm text-charcoal-500">Change climate conditions and let the trained model recalculate risk in real time.</p></div>
-        <form onSubmit={(e) => { e.preventDefault(); setFarmId(input.trim().toUpperCase()); }} className="flex items-center gap-2">
-          <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-charcoal-400" /><input value={input} onChange={(e) => setInput(e.target.value)} className="w-40 rounded-xl border border-charcoal-200 py-2 pl-8 pr-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" placeholder="FARM-001" /></div>
-          <button className="btn-secondary" type="submit">Load</button>
-        </form>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">What-If AI Simulator</h1>
+          <p className="mt-1 text-sm text-charcoal-500">Change climate conditions and let the trained ML model recalculate risk and yield impact in real time.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <SimTag text="Trained Model Prediction" />
+          <form onSubmit={(e) => { e.preventDefault(); setFarmId(input.trim().toUpperCase()); }} className="flex items-center gap-2">
+            <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-charcoal-400" /><input value={input} onChange={(e) => setInput(e.target.value)} className="w-40 rounded-xl border border-charcoal-200 py-2 pl-8 pr-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" placeholder="FARM-001" /></div>
+            <button className="btn-secondary" type="submit">Load</button>
+          </form>
+        </div>
       </div>
 
       {farm.error ? <ErrorState message={farm.error} onRetry={farm.refresh} /> : (
@@ -75,6 +98,15 @@ function Simulator() {
               <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {PRESETS.map((p) => <button key={p.name} onClick={() => applyPreset(p)} title={p.desc} className="rounded-xl border border-charcoal-200 p-2.5 text-left text-xs transition-all hover:border-emerald-300 hover:bg-emerald-50/40"><p className="font-semibold text-charcoal-900">{p.name}</p><p className="mt-0.5 line-clamp-2 text-[10px] text-charcoal-500">{p.desc}</p></button>)}
+                </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Current weather</p>
+                      <p className="mt-1 text-sm font-semibold text-charcoal-900">{liveWeather.loading ? "Loading…" : liveWeather.data ? `${liveWeather.data.temperature ?? f.farm.temperature}°C · ${liveWeather.data.precipitation ?? f.farm.precipitation} mm` : "Live weather unavailable"}</p>
+                    </div>
+                    <button type="button" onClick={applyCurrentWeather} disabled={!liveWeather.data} className="btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50">Use current weather</button>
+                  </div>
                 </div>
                 <Slider icon={CloudRain} label="Rainfall" value={rain} min={-60} max={60} step={5} onChange={setRain} format={(v) => `${v > 0 ? "+" : ""}${v}%`} base={`${f.farm.precipitation} mm/mo`} scenario={`${(f.farm.precipitation * (1 + rain / 100)).toFixed(0)} mm/mo`} />
                 <Slider icon={Thermometer} label="Temperature" value={temp} min={-3} max={6} step={0.5} onChange={setTemp} format={(v) => `${v > 0 ? "+" : ""}${v}°C`} base={`${f.farm.temperature}°C`} scenario={`${(f.farm.temperature + temp).toFixed(1)}°C`} />
@@ -132,6 +164,15 @@ function Result({ r }: { r: WhatIfResponse }) {
   const yi = useCountUp(r.predicted_yield_impact_pct, 900);
   const worse = r.change < 0;
   const levelChanged = r.baseline_risk_level !== r.new_risk_level;
+
+  const summaryText = r.scenario_summary.join(", ");
+  const riskChangeText =
+    r.baseline_risk_level === r.new_risk_level
+      ? `remains ${r.new_risk_level}`
+      : `shifts from ${r.baseline_risk_level} to ${r.new_risk_level}`;
+  const changeText = r.change >= 0 ? `+${Math.round(r.change)}` : `${Math.round(r.change)}`;
+  const explanationSentence = `With simulated scenario (${summaryText}), predicted crop risk ${riskChangeText}. TerraScore adjusts by ${changeText} points (from ${r.baseline_terra_score} to ${r.new_terra_score}) with estimated yield impact of ${r.predicted_yield_impact_pct >= 0 ? "+" : ""}${r.predicted_yield_impact_pct.toFixed(1)}%.`;
+
   return (
     <>
       <Card className="relative overflow-hidden animate-fadeUp">
@@ -143,12 +184,19 @@ function Result({ r }: { r: WhatIfResponse }) {
             <div className="flex flex-col items-center gap-2"><ScoreRing score={r.new_terra_score} size={170} label="new TerraScore" /><RiskBadge level={r.new_risk_level} /></div>
           </div>
           <div>
-            <p className="label">Scenario</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">{r.scenario_summary.map((s) => <span key={s} className="badge bg-charcoal-100 text-charcoal-700">{s}</span>)}</div>
+            <div className="flex items-center justify-between">
+              <p className="label">Scenario</p>
+              <SimTag text="Model Prediction" />
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5"><span className="badge bg-emerald-100 text-emerald-800">Model assessment using current weather conditions</span>{r.scenario_summary.map((s) => <span key={s} className="badge bg-charcoal-100 text-charcoal-700">{s}</span>)}</div>
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="rounded-xl border border-charcoal-100 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">Change</p><p className={cn("mt-1 flex items-center gap-1 text-xl font-semibold tabular-nums", worse ? "text-red-600" : "text-emerald-600")}>{worse ? <TrendingDown size={18} /> : <TrendingUp size={18} />}{change >= 0 ? "+" : ""}{Math.round(change)}</p></div>
               <div className="rounded-xl border border-charcoal-100 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">Risk</p><p className="mt-1 text-sm font-semibold text-charcoal-900">{r.baseline_risk_level.replace(" Risk", "")} → <span style={{ color: RISK_META[r.new_risk_level].hex }}>{r.new_risk_level.replace(" Risk", "")}</span></p>{levelChanged && <p className="text-[10px] text-amber-600">Band changed</p>}</div>
               <div className="rounded-xl border border-charcoal-100 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">Yield impact</p><p className={cn("mt-1 text-xl font-semibold tabular-nums", yi < 0 ? "text-red-600" : "text-emerald-600")}>{yi >= 0 ? "+" : ""}{yi.toFixed(1)}%</p></div>
+            </div>
+            <div className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs leading-relaxed text-forest-900">
+              <span className="font-semibold text-emerald-800">Model Prediction Explanation: </span>
+              {explanationSentence}
             </div>
             <p className="mt-3 text-xs text-charcoal-500">Risk probability {fmt.pct(r.baseline_risk_probability * 100)} → <b>{fmt.pct(r.new_risk_probability * 100)}</b> · predicted yield {r.baseline_predicted_yield} → <b>{r.new_predicted_yield}</b> t/ha · confidence {fmt.pct(r.confidence * 100, 0)}</p>
           </div>

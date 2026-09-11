@@ -11,7 +11,7 @@ export default function ModelPage() {
   const { data: m, loading, error, refresh } = useApi("model", api.model, { ttl: 300_000 });
   const [imp, setImp] = useState<"gini" | "perm">("gini");
   if (loading && !m) return <div className="space-y-6"><CardSkeleton lines={2} /><div className="grid gap-4 md:grid-cols-4">{[1, 2, 3, 4].map((i) => <CardSkeleton key={i} lines={1} />)}</div><CardSkeleton lines={8} /></div>;
-  if (error || !m) return <ErrorState message={error || "No model metadata"} onRetry={refresh} />;
+  if (error || !m) return <ErrorState message={error || "Model metrics not available"} onRetry={refresh} />;
   const fi = (imp === "gini" ? m.feature_importance : m.permutation_importance).slice(0, 14);
   const steps = [[CloudRain, "Weather + Soil + Crop + Location"], [Layers, "Data Processing & Feature Engineering"], [Cpu, `ML Prediction (${m.model_type.replace("Classifier", "")})`], [Percent, "Risk Probability"], [Gauge, "TerraScore 0–1000"], [Landmark, "Financial Decision Support"]] as const;
 
@@ -40,7 +40,7 @@ export default function ModelPage() {
                 <div key={k as string} className="rounded-xl border border-charcoal-100 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">{k as string}</p><p className="mt-0.5 text-xl font-semibold tabular-nums text-charcoal-900">{(v as number).toFixed(3)}</p></div>
               ))}
             </div>
-            <p className="mt-3 text-[11px] text-charcoal-400">Positive class rate {fmt.pct(m.positive_rate * 100)}. Probability MAE vs latent risk {(m.metrics as unknown as { prob_mae_vs_risk_score: number }).prob_mae_vs_risk_score?.toFixed(3)}.</p>
+            <p className="mt-3 text-[11px] text-charcoal-400">Positive class rate {fmt.pct(m.positive_rate * 100)}. Probability MAE vs latent risk {(m.metrics as unknown as { prob_mae_vs_risk_score?: number }).prob_mae_vs_risk_score?.toFixed(3) ?? "—"}.</p>
           </Card>
           <Card title="Model comparison" subtitle="Same split, same features">
             <table className="w-full text-sm"><thead><tr className="text-left text-[10px] uppercase tracking-wider text-charcoal-400"><th className="pb-2 font-semibold">Model</th><th className="pb-2 text-right font-semibold">AUC</th><th className="pb-2 text-right font-semibold">F1</th><th className="pb-2 text-right font-semibold">Brier</th></tr></thead>

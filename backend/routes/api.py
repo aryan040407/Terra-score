@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from backend.schemas.schemas import PredictRequest, PredictResponse, WhatIfRequest, WhatIfResponse
 from backend.services.data_service import store
 from backend.services import insight_service
+from backend.services.weather_service import get_weather_for_coordinates
 from predict import predict_risk  # ml/ is on sys.path via data_service
 
 router = APIRouter(prefix="/api", tags=["terrascore"])
@@ -152,6 +153,30 @@ def summary(view: str = "farmer"):
 def alerts(limit: int = Query(8, ge=1, le=20)):
     _require_ready()
     return {"alerts": insight_service.generate_alerts(limit), "label": "Generated from simulated data"}
+
+
+@router.get("/weather")
+def weather(latitude: float = Query(..., ge=-90, le=90), longitude: float = Query(..., ge=-180, le=180)):
+    """Return current weather for a coordinate pair. This is a scenario input, not a direct prediction."""
+    try:
+        data = get_weather_for_coordinates(latitude, longitude)
+        return {
+            "latitude": data["latitude"],
+            "longitude": data["longitude"],
+            "temperature": data["temperature"],
+            "precipitation": data["precipitation"],
+            "rain": data["rain"],
+            "humidity": data["humidity"],
+            "weather_code": data["weather_code"],
+            "weather_condition": data["weather_condition"],
+            "timestamp": data["timestamp"],
+            "source": data["source"],
+            "data_type": data["data_type"],
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Live weather unavailable — showing historical/model data. {type(exc).__name__}")
 
 
 @router.get("/telemetry/{farm_id}")

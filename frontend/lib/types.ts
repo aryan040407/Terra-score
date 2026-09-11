@@ -64,6 +64,20 @@ export interface Telemetry {
   readings: { temperature_c: number; soil_moisture_pct: number; precipitation_mm: number; humidity_pct: number; soil_temperature_c: number; ndvi: number };
 }
 
+export interface WeatherResponse {
+  latitude: number;
+  longitude: number;
+  temperature: number | null;
+  precipitation: number | null;
+  rain: number | null;
+  humidity: number | null;
+  weather_code: number | null;
+  weather_condition: string;
+  timestamp: string;
+  source: string;
+  data_type: string;
+}
+
 export interface WhatIfRequest {
   farm_id: string; rainfall_change_pct: number; temperature_change_c: number; soil_moisture_change_pct: number;
   irrigation_status?: "None" | "Partial" | "Good"; drought_index?: number; pest_risk?: number;

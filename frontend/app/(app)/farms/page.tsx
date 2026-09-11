@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, MapPin, Sprout, Thermometer, Droplets, CloudRain, Wind, Waves, Bug, Sun, ShieldCheck, TrendingUp, ArrowRight, Ruler, Calendar, Layers } from "lucide-react";
+import { Search, MapPin, Sprout, Thermometer, Droplets, CloudRain, Wind, Waves, Bug, Sun, ShieldCheck, TrendingUp, ArrowRight, Ruler, Calendar, Layers, Lightbulb, CheckCircle2 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import type { FarmListItem } from "@/lib/types";
@@ -110,6 +110,8 @@ function Farms() {
                 </Card>
               </div>
 
+              <FarmRecommendations d={d} />
+
               <Card title="Historical Risk" subtitle="TerraScore, weather and yield over time" action={<div className="flex items-center gap-2"><SimTag /><Segmented value={months} onChange={setMonths} options={RANGES} /></div>}>
                 {trends.loading && !trends.data ? <div className="skeleton h-[240px]" /> : trends.error ? <ErrorState message={trends.error} onRetry={trends.refresh} /> : (
                   <div className="grid gap-6 lg:grid-cols-2">
@@ -137,5 +139,69 @@ function Cond({ icon: Icon, label, value, bar, bad }: { icon: typeof Sun; label:
       <p className="mt-1 text-sm font-semibold text-charcoal-900">{value}</p>
       {bar !== undefined && <div className="mt-1.5 h-1.5 w-full rounded-full bg-charcoal-100"><div className={cn("h-1.5 rounded-full", bad ? "bg-gradient-to-r from-amber-400 to-red-500" : "bg-gradient-to-r from-emerald-400 to-forest-600")} style={{ width: `${Math.round(bar * 100)}%` }} /></div>}
     </div>
+  );
+}
+
+function FarmRecommendations({ d }: { d: import("@/lib/types").FarmDetail }) {
+  const recs: { title: string; desc: string; impact: string }[] = [];
+
+  if (d.farm.drought_index > 0.4 || d.farm.precipitation < 60) {
+    recs.push({
+      title: "Micro-Irrigation & Moisture Retention",
+      desc: "Install drip irrigation lines and organic mulching to minimize evapotranspiration and stabilize root-zone moisture during dry intervals.",
+      impact: "Reduces drought stress index",
+    });
+  }
+  if (d.farm.pest_risk > 0.4) {
+    recs.push({
+      title: "Integrated Pest Management (IPM)",
+      desc: "Deploy pest traps and biological controls in response to rising humidity to avert pest-related yield losses.",
+      impact: "Prevents pest-driven yield risk",
+    });
+  }
+  if (d.farm.soil_health < 65) {
+    recs.push({
+      title: "Soil Organic Matter Regeneration",
+      desc: "Incorporate cover crops, farmyard manure, or biochar to enhance soil aggregate stability and nutrient absorption.",
+      impact: "Improves baseline soil resilience",
+    });
+  }
+  if (d.farm.irrigation_status !== "Good") {
+    recs.push({
+      title: "Irrigation Infrastructure Upgrade",
+      desc: `Upgrade from ${d.farm.irrigation_status} to Good irrigation to reduce rainfall dependency and secure crop cycles.`,
+      impact: "Can boost TerraScore by 40–80 pts",
+    });
+  }
+  if (d.farm.weather_volatility > 0.5) {
+    recs.push({
+      title: "Weather-Resilient Crop Staggering",
+      desc: "Stagger sowing dates or mix drought-tolerant seed varieties to hedge against unseasonal rainfall volatility.",
+      impact: "Dampens yield volatility",
+    });
+  }
+  if (recs.length === 0) {
+    recs.push({
+      title: "Maintain Standard Agronomic Protocol",
+      desc: "Current agronomic and climate indicators are well-balanced. Maintain timely weeding and scheduled nutrient application.",
+      impact: "Maintains Low Risk tier",
+    });
+  }
+
+  return (
+    <Card title="Agronomic Risk Mitigation & Recommendations" subtitle={`Actionable steps for ${d.farm.farmer_name} (${d.farm.farm_id})`} icon={Lightbulb}>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {recs.slice(0, 3).map((r, i) => (
+          <div key={i} className="rounded-xl border border-charcoal-100 bg-forest-50/40 p-4 transition-all hover:bg-forest-50/70">
+            <div className="flex items-center gap-2 text-forest-800">
+              <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+              <p className="text-sm font-semibold text-charcoal-900">{r.title}</p>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-charcoal-600">{r.desc}</p>
+            <p className="mt-3 inline-block rounded-md bg-emerald-100/80 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">{r.impact}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

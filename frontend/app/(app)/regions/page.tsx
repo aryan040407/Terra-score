@@ -35,7 +35,7 @@ export default function RegionsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">Regional Risk Heatmap</h1>
-          <p className="mt-1 text-sm text-charcoal-500">District-level portfolio monitoring for lenders and insurers. Click a region for details.</p>
+          <p className="mt-1 text-sm text-charcoal-500">District-level climate and agricultural risk monitoring. Click a region for details.</p>
         </div>
         <SimTag text="Simulated farm locations & risk" />
       </div>

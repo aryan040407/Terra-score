@@ -36,8 +36,8 @@ export default function Landing() {
             <a href="#score" className="hover:text-charcoal-900">TerraScore</a><a href="#users" className="hover:text-charcoal-900">Who uses it</a><a href="#tech" className="hover:text-charcoal-900">Technology</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/dashboard" className="btn-ghost hidden sm:inline-flex">Dashboard</Link>
-            <Link href="/dashboard?demo=1" className="btn-primary"><Play size={14} /> Launch Demo</Link>
+            <Link href="/login" className="btn-ghost hidden sm:inline-flex">Sign In</Link>
+            <Link href="/login" className="btn-primary"><Play size={14} /> Launch Demo</Link>
           </div>
         </div>
       </header>
@@ -53,8 +53,8 @@ export default function Landing() {
             TerraScore transforms localized climate and agricultural data into a dynamic risk intelligence signal for lenders and insurers.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/dashboard" className="btn-primary px-6 py-3 text-[15px]">Explore TerraScore <ArrowRight size={16} /></Link>
-            <Link href="/dashboard?demo=1" className="btn-secondary px-6 py-3 text-[15px]"><Play size={15} /> View Live Demo</Link>
+            <Link href="/login" className="btn-primary px-6 py-3 text-[15px]">Explore TerraScore <ArrowRight size={16} /></Link>
+            <Link href="/login" className="btn-secondary px-6 py-3 text-[15px]"><Play size={15} /> View Live Demo</Link>
           </div>
           <div className="mt-10 grid max-w-lg grid-cols-3 gap-6 border-t border-charcoal-100 pt-6">
             {[["1,500", "synthetic farms scored"], ["13", "Indian states covered"], ["0–1000", "explainable score"]].map(([v, l]) => (
@@ -187,7 +187,7 @@ export default function Landing() {
         <div className="card flex flex-col items-center gap-5 bg-gradient-to-b from-white to-emerald-50/50 p-10 text-center">
           <p className="text-sm font-semibold uppercase tracking-[.16em] text-forest-600">Climate Data → AI → TerraScore → Better Financial Decisions</p>
           <h2 className="text-3xl font-semibold tracking-tight text-charcoal-950">See it work on a real scenario.</h2>
-          <Link href="/dashboard?demo=1" className="btn-primary px-7 py-3 text-[15px]"><Play size={15} /> Launch Demo</Link>
+          <Link href="/login" className="btn-primary px-7 py-3 text-[15px]"><Play size={15} /> Launch Demo</Link>
         </div>
       </section>
 
