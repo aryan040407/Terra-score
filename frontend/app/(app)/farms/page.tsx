@@ -10,6 +10,7 @@ import { Card, CardSkeleton, EmptyState, ErrorState, RiskBadge, Segmented, Selec
 import { ScoreRing, ScoreBar } from "@/components/ui/ScoreRing";
 import { FactorBars } from "@/components/ui/FactorBars";
 import { TerraScoreTrend, WeatherTrend, YieldRiskTrend } from "@/components/charts/charts";
+import { useRegion } from "@/contexts/RegionContext";
 import { cn, fmt, RISK_META } from "@/lib/utils";
 
 const RANGES = [{ value: "7", label: "7 mo" }, { value: "12", label: "12 mo" }, { value: "24", label: "24 mo" }, { value: "60", label: "5 yr" }];
@@ -18,10 +19,17 @@ export default function FarmsPage() { return <Suspense fallback={<CardSkeleton /
 
 function Farms() {
   const params = useSearchParams();
-  const [farmId, setFarmId] = useState(params.get("farm") || "FARM-001");
-  const [search, setSearch] = useState(""); const [state, setState] = useState(params.get("state") || ""); const [crop, setCrop] = useState("");
+  const { selectedRegion } = useRegion();
+  const [farmId, setFarmId] = useState(params.get("farm") || selectedRegion.farmId);
+  const [search, setSearch] = useState(""); const [state, setState] = useState(params.get("state") || selectedRegion.state); const [crop, setCrop] = useState("");
   const [months, setMonths] = useState("12");
   useEffect(() => { const f = params.get("farm"); if (f) setFarmId(f); }, [params]);
+  useEffect(() => {
+    if (!params.get("farm") && !params.get("state") && !params.get("district")) {
+      setFarmId(selectedRegion.farmId);
+      setState(selectedRegion.state);
+    }
+  }, [params, selectedRegion]);
 
   const list = useApi(`farms-${state}-${crop}-${search}`, () => api.farms({ state, crop, search, limit: 60 }), { ttl: 60_000 });
   const filters = useApi("regions-all", () => api.regions(), { ttl: 120_000 });
@@ -35,7 +43,7 @@ function Farms() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
-        <div><h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">Farm Risk Analysis</h1><p className="mt-1 text-sm text-charcoal-500">Select a farm to see its TerraScore and the factors behind it.</p></div>
+        <div><h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">Farm Risk Analysis</h1><p className="mt-1 text-sm text-charcoal-500">Current demo context: {selectedRegion.displayName}. Select a farm to see its TerraScore and the factors behind it.</p></div>
         <SimTag text="Simulated farm records" />
       </div>
 

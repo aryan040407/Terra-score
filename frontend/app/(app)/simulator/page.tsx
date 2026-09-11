@@ -10,6 +10,7 @@ import { ScoreRing } from "@/components/ui/ScoreRing";
 import { FactorBars } from "@/components/ui/FactorBars";
 import { useToast } from "@/components/ui/Toast";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useRegion } from "@/contexts/RegionContext";
 import { cn, fmt, RISK_META } from "@/lib/utils";
 
 export default function SimulatorPage() { return <Suspense fallback={<CardSkeleton />}><Simulator /></Suspense>; }
@@ -24,7 +25,8 @@ const PRESETS = [
 function Simulator() {
   const params = useSearchParams();
   const { toast } = useToast();
-  const [farmId, setFarmId] = useState(params.get("farm") || "FARM-001");
+  const { selectedRegion } = useRegion();
+  const [farmId, setFarmId] = useState(params.get("farm") || selectedRegion.farmId);
   const [input, setInput] = useState(farmId);
   const farm = useApi(`farm-${farmId}`, () => api.farm(farmId));
   const f = farm.data;
@@ -33,6 +35,10 @@ function Simulator() {
   const [rain, setRain] = useState(0); const [temp, setTemp] = useState(0); const [sm, setSm] = useState(0);
   const [irrigation, setIrrigation] = useState<"None" | "Partial" | "Good" | "">(""); const [drought, setDrought] = useState<number | null>(null); const [pest, setPest] = useState<number | null>(null);
   const [result, setResult] = useState<WhatIfResponse | null>(null); const [running, setRunning] = useState(false); const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFarmId(params.get("farm") || selectedRegion.farmId);
+  }, [params, selectedRegion.farmId]);
 
   useEffect(() => { if (f) { setDrought(f.farm.drought_index); setPest(f.farm.pest_risk); setIrrigation(f.farm.irrigation_status); setResult(null); } }, [f]);
 
@@ -78,7 +84,7 @@ function Simulator() {
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">What-If AI Simulator</h1>
-          <p className="mt-1 text-sm text-charcoal-500">Change climate conditions and let the trained ML model recalculate risk and yield impact in real time.</p>
+          <p className="mt-1 text-sm text-charcoal-500">Demo context: {selectedRegion.displayName}. Change climate conditions and let the trained ML model recalculate risk and yield impact in real time.</p>
         </div>
         <div className="flex items-center gap-2">
           <SimTag text="Trained Model Prediction" />

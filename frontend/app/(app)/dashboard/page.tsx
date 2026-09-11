@@ -12,6 +12,7 @@ import { FactorBars } from "@/components/ui/FactorBars";
 import { TerraScoreTrend, WeatherTrend, YieldRiskTrend, ImportanceBars, RiskDistribution, Donut, SimpleBars } from "@/components/charts/charts";
 import { AlertsPanel, LiveTelemetry } from "@/components/dashboard/widgets";
 import { useToast } from "@/components/ui/Toast";
+import { useRegion } from "@/contexts/RegionContext";
 import { fmt, RISK_META, cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 
@@ -24,11 +25,16 @@ function Dashboard() {
   const demo = params.get("demo") === "1";
   const [session, setSession] = useState<AuthSession | null>(null);
   const { toast } = useToast();
-  const [farmId, setFarmId] = useState("FARM-001");
+  const { selectedRegion } = useRegion();
+  const [farmId, setFarmId] = useState(selectedRegion.farmId);
 
   useEffect(() => {
     setSession(getSession());
   }, []);
+
+  useEffect(() => {
+    setFarmId(selectedRegion.farmId);
+  }, [selectedRegion.farmId]);
 
   const role: UserRole = session?.role || "farmer";
 
@@ -38,7 +44,12 @@ function Dashboard() {
   const model = useApi("model", api.model, { ttl: 300_000 });
   const regions = useApi("regions-all", () => api.regions(), { ttl: 120_000 });
 
-  useEffect(() => { if (demo) { setFarmId("FARM-001"); toast("success", "Demo scenario loaded", "FARM-001 · Wheat · Ludhiana, Punjab"); } }, [demo, toast]);
+  useEffect(() => {
+    if (demo) {
+      setFarmId(selectedRegion.farmId);
+      toast("success", "Demo scenario loaded", `${selectedRegion.farmId} · ${selectedRegion.primaryCrop} · ${selectedRegion.displayName}`);
+    }
+  }, [demo, selectedRegion, toast]);
 
   const s = summary.data; const f = farm.data;
   const fi = useMemo(() => (model.data?.feature_importance || []).slice(0, 8), [model.data]);

@@ -47,10 +47,10 @@ export default function Landing() {
         <div className="animate-fadeUp">
           <span className="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulseDot" /> Prototype · Simulated data · Hackathon MVP</span>
           <h1 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-tight text-charcoal-950 sm:text-5xl lg:text-[60px]">
-            Make Climate Risk <span className="bg-gradient-to-r from-forest-700 to-emerald-500 bg-clip-text text-transparent">Financially Measurable.</span>
+            Turn climate signals <span className="bg-gradient-to-r from-forest-700 to-emerald-500 bg-clip-text text-transparent">into decisions.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-charcoal-600">
-            TerraScore transforms localized climate and agricultural data into a dynamic risk intelligence signal for lenders and insurers.
+            Weather + agriculture + machine learning — converted into a clear TerraScore for farmers, lenders and government teams.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/login" className="btn-primary px-6 py-3 text-[15px]">Explore TerraScore <ArrowRight size={16} /></Link>

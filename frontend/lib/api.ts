@@ -28,8 +28,8 @@ const qs = (o: Record<string, string | number | undefined | null>) => {
 };
 
 export const api = {
-  health: () => request<{ status: string; model_loaded: boolean; farms_loaded: number; model_type: string }>("/api/health"),
-  farms: (f: { state?: string; crop?: string; risk_level?: string; search?: string; limit?: number; offset?: number } = {}) => request<FarmList>(`/api/farms${qs(f)}`),
+  health: () => request<{ status: string; model_loaded: boolean; farms_loaded: number; model_type: string }>('/api/health'),
+  farms: (f: { state?: string; district?: string; crop?: string; risk_level?: string; search?: string; limit?: number; offset?: number } = {}) => request<FarmList>(`/api/farms${qs(f)}`),
   farm: (id: string) => request<FarmDetail>(`/api/farms/${encodeURIComponent(id)}`),
   terrascore: (id: string) => request<Record<string, unknown>>(`/api/terrascore/${encodeURIComponent(id)}`),
   trends: (id: string, months: number) => request<{ series: HistoryPoint[] }>(`/api/risk-trends/${encodeURIComponent(id)}?months=${months}`),
