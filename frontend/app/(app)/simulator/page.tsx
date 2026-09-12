@@ -1,7 +1,10 @@
 "use client";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { FlaskConical, CloudRain, Thermometer, Droplets, Waves, Sun, Bug, Play, RotateCcw, ArrowRight, Sparkles, TrendingDown, TrendingUp, Search } from "lucide-react";
+import {
+  FlaskConical, CloudRain, Thermometer, Droplets, Waves, Sun, Bug, Play, RotateCcw,
+  ArrowRight, Sparkles, TrendingDown, TrendingUp, Search, MessageSquareText, CheckCircle2,
+} from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import type { WhatIfResponse } from "@/lib/types";
@@ -12,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRegion } from "@/contexts/RegionContext";
 import { cn, fmt, RISK_META } from "@/lib/utils";
+import { parseScenarioInput, type ParsedScenario } from "@/lib/scenarioParser";
 
 export default function SimulatorPage() { return <Suspense fallback={<CardSkeleton />}><Simulator /></Suspense>; }
 
@@ -19,7 +23,7 @@ const PRESETS = [
   { name: "Dry spell", desc: "Rain −20%, Temp +2°C, Soil moisture −15%", v: { rain: -20, temp: 2, sm: -15 } },
   { name: "Severe drought", desc: "Rain −45%, Temp +3.5°C, Drought 0.85", v: { rain: -45, temp: 3.5, sm: -30, drought: 0.85 } },
   { name: "Irrigation upgrade", desc: "Irrigation → Good, Soil moisture +20%", v: { irrigation: "Good" as const, sm: 20 } },
-  { name: "Pest outbreak", desc: "Pest risk 0.8, Humidity-driven", v: { pest: 0.8 } },
+  { name: "Pest outbreak", desc: "Pest risk 0.8, humidity-driven", v: { pest: 0.8 } },
 ];
 
 function Simulator() {
@@ -32,18 +36,62 @@ function Simulator() {
   const f = farm.data;
   const liveWeather = useApi(f ? `weather-${f.farm.farm_id}` : null, () => api.weather(f!.farm.latitude, f!.farm.longitude), { ttl: 300_000 });
 
-  const [rain, setRain] = useState(0); const [temp, setTemp] = useState(0); const [sm, setSm] = useState(0);
-  const [irrigation, setIrrigation] = useState<"None" | "Partial" | "Good" | "">(""); const [drought, setDrought] = useState<number | null>(null); const [pest, setPest] = useState<number | null>(null);
-  const [result, setResult] = useState<WhatIfResponse | null>(null); const [running, setRunning] = useState(false); const [err, setErr] = useState<string | null>(null);
+  const [rain, setRain] = useState(0);
+  const [temp, setTemp] = useState(0);
+  const [sm, setSm] = useState(0);
+  const [irrigation, setIrrigation] = useState<"None" | "Partial" | "Good" | "">("");
+  const [drought, setDrought] = useState<number | null>(null);
+  const [pest, setPest] = useState<number | null>(null);
+  const [result, setResult] = useState<WhatIfResponse | null>(null);
+  const [running, setRunning] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [scenarioInput, setScenarioInput] = useState(`Rainfall drops 20% and temperature rises 2°C in ${selectedRegion.displayName}.`);
+  const [parsedScenario, setParsedScenario] = useState<ParsedScenario | null>(null);
+  const [scenarioConfirmed, setScenarioConfirmed] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     setFarmId(params.get("farm") || selectedRegion.farmId);
   }, [params, selectedRegion.farmId]);
 
-  useEffect(() => { if (f) { setDrought(f.farm.drought_index); setPest(f.farm.pest_risk); setIrrigation(f.farm.irrigation_status); setResult(null); } }, [f]);
+  useEffect(() => {
+    if (f) {
+      setDrought(f.farm.drought_index);
+      setPest(f.farm.pest_risk);
+      setIrrigation(f.farm.irrigation_status);
+      setResult(null);
+    }
+  }, [f]);
 
-  const reset = () => { setRain(0); setTemp(0); setSm(0); if (f) { setDrought(f.farm.drought_index); setPest(f.farm.pest_risk); setIrrigation(f.farm.irrigation_status); } setResult(null); };
-  const applyPreset = (p: typeof PRESETS[number]) => { reset(); setRain(p.v.rain ?? 0); setTemp(p.v.temp ?? 0); setSm(p.v.sm ?? 0); if (p.v.drought !== undefined) setDrought(p.v.drought); if (p.v.pest !== undefined) setPest(p.v.pest); if (p.v.irrigation) setIrrigation(p.v.irrigation); };
+  const reset = () => {
+    setRain(0);
+    setTemp(0);
+    setSm(0);
+    setParsedScenario(null);
+    setScenarioConfirmed(false);
+    setScenarioInput(`Rainfall drops 20% and temperature rises 2°C in ${selectedRegion.displayName}.`);
+    if (f) {
+      setDrought(f.farm.drought_index);
+      setPest(f.farm.pest_risk);
+      setIrrigation(f.farm.irrigation_status);
+    }
+    setResult(null);
+  };
+
+  const applyPreset = (p: typeof PRESETS[number]) => {
+    reset();
+    setRain(p.v.rain ?? 0);
+    setTemp(p.v.temp ?? 0);
+    setSm(p.v.sm ?? 0);
+    if (p.v.drought !== undefined) setDrought(p.v.drought);
+    if (p.v.pest !== undefined) setPest(p.v.pest);
+    if (p.v.irrigation) setIrrigation(p.v.irrigation);
+    setScenarioInput(`${p.name} scenario for ${selectedRegion.displayName}.`);
+    setParsedScenario(null);
+    setScenarioConfirmed(false);
+    setErr(null);
+  };
+
   const applyCurrentWeather = () => {
     if (!f || !liveWeather.data) return;
     const rainfallDelta = ((liveWeather.data.precipitation ?? f.farm.precipitation) - f.farm.precipitation) / f.farm.precipitation * 100;
@@ -54,19 +102,64 @@ function Simulator() {
     setDrought(f.farm.drought_index);
     setPest(f.farm.pest_risk);
     setIrrigation(f.farm.irrigation_status);
+    setParsedScenario(null);
+    setScenarioConfirmed(false);
+    setScenarioInput(`Use the current weather snapshot for ${selectedRegion.displayName}.`);
     setResult(null);
+  };
+
+  const interpretScenario = () => {
+    const next = parseScenarioInput(scenarioInput);
+    setParsedScenario(next);
+    setScenarioConfirmed(false);
+    setErr(null);
+
+    if (next.summary.length === 0) {
+      setErr(next.warnings[0] || "We could not interpret that scenario.");
+      return;
+    }
+
+    const effectiveRain = next.rainfall_change_pct ?? 0;
+    const effectiveTemp = next.temperature_change_c ?? 0;
+    const effectiveSm = next.soil_moisture_change_pct ?? 0;
+    setRain(effectiveRain);
+    setTemp(effectiveTemp);
+    setSm(effectiveSm);
+    if (next.irrigation_status) setIrrigation(next.irrigation_status);
+    if (next.drought_index !== undefined) setDrought(next.drought_index);
+    if (next.pest_risk !== undefined) setPest(next.pest_risk);
+    setShowAdvanced(true);
+  };
+
+  const acceptParsedScenario = () => {
+    if (!parsedScenario || parsedScenario.summary.length === 0) {
+      setErr("Interpret the note first so the scenario can be confirmed.");
+      return;
+    }
+    setScenarioConfirmed(true);
+    setErr(null);
   };
 
   const run = async () => {
     if (!f) return;
+    if (parsedScenario && !scenarioConfirmed) {
+      setErr("Review and confirm the interpreted scenario before simulating.");
+      return;
+    }
+
     setRunning(true); setErr(null);
     try {
-      // Only send overrides that actually differ from baseline so the backend can apply its secondary coupling
       const dChanged = drought !== null && Math.abs(drought - f.farm.drought_index) > 1e-6;
       const pChanged = pest !== null && Math.abs(pest - f.farm.pest_risk) > 1e-6;
-      const r = await api.whatIf({ farm_id: farmId, rainfall_change_pct: rain, temperature_change_c: temp, soil_moisture_change_pct: sm,
+      const r = await api.whatIf({
+        farm_id: farmId,
+        rainfall_change_pct: rain,
+        temperature_change_c: temp,
+        soil_moisture_change_pct: sm,
         irrigation_status: irrigation && irrigation !== f.farm.irrigation_status ? irrigation : undefined,
-        drought_index: dChanged ? drought! : undefined, pest_risk: pChanged ? pest! : undefined });
+        drought_index: dChanged ? drought! : undefined,
+        pest_risk: pChanged ? pest! : undefined,
+      });
       setResult(r);
     } catch (e) {
       const m = "Prediction could not be generated. Please check your inputs and try again.";
@@ -77,14 +170,18 @@ function Simulator() {
     }
   };
 
-  const changed = rain !== 0 || temp !== 0 || sm !== 0 || (f && (irrigation !== f.farm.irrigation_status || Math.abs((drought ?? 0) - f.farm.drought_index) > 1e-6 || Math.abs((pest ?? 0) - f.farm.pest_risk) > 1e-6));
+  const changed = useMemo(() => {
+    if (!f) return false;
+    return rain !== 0 || temp !== 0 || sm !== 0 || irrigation !== f.farm.irrigation_status ||
+      Math.abs((drought ?? 0) - f.farm.drought_index) > 1e-6 || Math.abs((pest ?? 0) - f.farm.pest_risk) > 1e-6;
+  }, [drought, f, irrigation, pest, rain, sm, temp]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3 animate-fadeUp">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-charcoal-950">What-If AI Simulator</h1>
-          <p className="mt-1 text-sm text-charcoal-500">Demo context: {selectedRegion.displayName}. Change climate conditions and let the trained ML model recalculate risk and yield impact in real time.</p>
+          <p className="mt-1 text-sm text-charcoal-500">Demo context: {selectedRegion.displayName}. Describe the climate scenario in plain language and confirm the model interpretation before generating a forecast.</p>
         </div>
         <div className="flex items-center gap-2">
           <SimTag text="Trained Model Prediction" />
@@ -97,42 +194,77 @@ function Simulator() {
 
       {farm.error ? <ErrorState message={farm.error} onRetry={farm.refresh} /> : (
         <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-          {/* Controls */}
           <Card title="Scenario Controls" subtitle={f ? `${f.farm.farm_id} · ${f.farm.crop_type} · ${f.farm.district}, ${f.farm.state}` : "Loading farm…"} icon={FlaskConical}
             action={<button onClick={reset} className="btn-ghost text-xs"><RotateCcw size={13} /> Reset</button>}>
-            {!f ? <div className="space-y-4">{[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-12" />)}</div> : (
+            {!f ? <div className="space-y-4">{[1,2,3,4].map((i) => <div key={i} className="skeleton h-12" />)}</div> : (
               <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {PRESETS.map((p) => <button key={p.name} onClick={() => applyPreset(p)} title={p.desc} className="rounded-xl border border-charcoal-200 p-2.5 text-left text-xs transition-all hover:border-emerald-300 hover:bg-emerald-50/40"><p className="font-semibold text-charcoal-900">{p.name}</p><p className="mt-0.5 line-clamp-2 text-[10px] text-charcoal-500">{p.desc}</p></button>)}
-                </div>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Current weather</p>
-                      <p className="mt-1 text-sm font-semibold text-charcoal-900">{liveWeather.loading ? "Loading…" : liveWeather.data ? `${liveWeather.data.temperature ?? f.farm.temperature}°C · ${liveWeather.data.precipitation ?? f.farm.precipitation} mm` : "Live weather unavailable"}</p>
-                    </div>
-                    <button type="button" onClick={applyCurrentWeather} disabled={!liveWeather.data} className="btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50">Use current weather</button>
+                <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800"><MessageSquareText size={15} /> Natural-language scenario</div>
+                  <textarea value={scenarioInput} onChange={(e) => { setScenarioInput(e.target.value); setParsedScenario(null); setScenarioConfirmed(false); setErr(null); }} rows={3} className="w-full rounded-xl border border-emerald-200 bg-white p-3 text-sm text-charcoal-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" placeholder="Example: Rainfall drops 20% and temperature rises 2°C in Ludhiana." />
+                  <div className="flex flex-wrap gap-2">
+                    {PRESETS.map((preset) => (
+                      <button key={preset.name} type="button" onClick={() => setScenarioInput(`${preset.desc} in ${selectedRegion.displayName}.`)} className="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-medium text-emerald-800 hover:border-emerald-300">
+                        {preset.name}
+                      </button>
+                    ))}
                   </div>
+                  <button type="button" onClick={interpretScenario} className="btn-secondary w-full">Interpret scenario</button>
                 </div>
-                <Slider icon={CloudRain} label="Rainfall" value={rain} min={-60} max={60} step={5} onChange={setRain} format={(v) => `${v > 0 ? "+" : ""}${v}%`} base={`${f.farm.precipitation} mm/mo`} scenario={`${(f.farm.precipitation * (1 + rain / 100)).toFixed(0)} mm/mo`} />
-                <Slider icon={Thermometer} label="Temperature" value={temp} min={-3} max={6} step={0.5} onChange={setTemp} format={(v) => `${v > 0 ? "+" : ""}${v}°C`} base={`${f.farm.temperature}°C`} scenario={`${(f.farm.temperature + temp).toFixed(1)}°C`} />
-                <Slider icon={Droplets} label="Soil moisture" value={sm} min={-50} max={50} step={5} onChange={setSm} format={(v) => `${v > 0 ? "+" : ""}${v}%`} base={`${f.farm.soil_moisture}%`} scenario={`${Math.min(100, f.farm.soil_moisture * (1 + sm / 100)).toFixed(0)}%`} />
-                <Slider icon={Sun} label="Drought index" value={drought ?? 0} min={0} max={1} step={0.05} onChange={setDrought} format={(v) => v.toFixed(2)} base={f.farm.drought_index.toFixed(2)} scenario={(drought ?? 0).toFixed(2)} />
-                <Slider icon={Bug} label="Pest risk" value={pest ?? 0} min={0} max={1} step={0.05} onChange={setPest} format={(v) => v.toFixed(2)} base={f.farm.pest_risk.toFixed(2)} scenario={(pest ?? 0).toFixed(2)} />
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm"><span className="flex items-center gap-2 font-medium text-charcoal-800"><Waves size={15} className="text-forest-600" />Irrigation</span><span className="text-xs text-charcoal-500">baseline {f.farm.irrigation_status}</span></div>
-                  <div className="grid grid-cols-3 gap-2">{(["None", "Partial", "Good"] as const).map((o) => <button key={o} onClick={() => setIrrigation(o)} className={cn("rounded-xl border py-2 text-sm font-medium transition-all", irrigation === o ? "border-forest-700 bg-forest-800 text-white" : "border-charcoal-200 hover:border-emerald-300")}>{o}</button>)}</div>
+
+                {parsedScenario && (
+                  <div className="rounded-xl border border-charcoal-200 bg-charcoal-50/80 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-500">Model interpretation</p>
+                        <p className="mt-1 text-sm font-medium text-charcoal-900">{parsedScenario.summary.join(" · ")}</p>
+                      </div>
+                      <button type="button" onClick={acceptParsedScenario} className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all", scenarioConfirmed ? "bg-emerald-100 text-emerald-800" : "bg-emerald-600 text-white hover:bg-emerald-700")}> <CheckCircle2 size={13} /> {scenarioConfirmed ? "Confirmed" : "Confirm"}</button>
+                    </div>
+                    {parsedScenario.warnings.length > 0 && (
+                      <ul className="mt-2 space-y-1 text-xs text-amber-700">
+                        {parsedScenario.warnings.map((warning) => <li key={warning}>• {warning}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-charcoal-900">Advanced controls</p>
+                  <button type="button" onClick={() => setShowAdvanced((v) => !v)} className="text-xs text-emerald-700 underline-offset-2 hover:underline">{showAdvanced ? "Hide" : "Show"}</button>
                 </div>
-                <button onClick={run} disabled={running || !changed} className="btn-primary w-full py-3 text-[15px]">
+
+                {showAdvanced && (
+                  <div className="space-y-5">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Current weather</p>
+                          <p className="mt-1 text-sm font-semibold text-charcoal-900">{liveWeather.loading ? "Loading…" : liveWeather.data ? `${liveWeather.data.temperature ?? f.farm.temperature}°C · ${liveWeather.data.precipitation ?? f.farm.precipitation} mm` : "Live weather unavailable"}</p>
+                        </div>
+                        <button type="button" onClick={applyCurrentWeather} disabled={!liveWeather.data} className="btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50">Use current weather</button>
+                      </div>
+                    </div>
+                    <Slider icon={CloudRain} label="Rainfall" value={rain} min={-60} max={60} step={5} onChange={(v) => { setRain(v); setScenarioConfirmed(false); setParsedScenario(null); }} format={(v) => `${v > 0 ? "+" : ""}${v}%`} base={`${f.farm.precipitation} mm/mo`} scenario={`${(f.farm.precipitation * (1 + rain / 100)).toFixed(0)} mm/mo`} />
+                    <Slider icon={Thermometer} label="Temperature" value={temp} min={-3} max={6} step={0.5} onChange={(v) => { setTemp(v); setScenarioConfirmed(false); setParsedScenario(null); }} format={(v) => `${v > 0 ? "+" : ""}${v}°C`} base={`${f.farm.temperature}°C`} scenario={`${(f.farm.temperature + temp).toFixed(1)}°C`} />
+                    <Slider icon={Droplets} label="Soil moisture" value={sm} min={-50} max={50} step={5} onChange={(v) => { setSm(v); setScenarioConfirmed(false); setParsedScenario(null); }} format={(v) => `${v > 0 ? "+" : ""}${v}%`} base={`${f.farm.soil_moisture}%`} scenario={`${Math.min(100, f.farm.soil_moisture * (1 + sm / 100)).toFixed(0)}%`} />
+                    <Slider icon={Sun} label="Drought index" value={drought ?? 0} min={0} max={1} step={0.05} onChange={(v) => { setDrought(v); setScenarioConfirmed(false); setParsedScenario(null); }} format={(v) => v.toFixed(2)} base={f.farm.drought_index.toFixed(2)} scenario={(drought ?? 0).toFixed(2)} />
+                    <Slider icon={Bug} label="Pest risk" value={pest ?? 0} min={0} max={1} step={0.05} onChange={(v) => { setPest(v); setScenarioConfirmed(false); setParsedScenario(null); }} format={(v) => v.toFixed(2)} base={f.farm.pest_risk.toFixed(2)} scenario={(pest ?? 0).toFixed(2)} />
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm"><span className="flex items-center gap-2 font-medium text-charcoal-800"><Waves size={15} className="text-forest-600" />Irrigation</span><span className="text-xs text-charcoal-500">baseline {f.farm.irrigation_status}</span></div>
+                      <div className="grid grid-cols-3 gap-2">{(["None", "Partial", "Good"] as const).map((o) => <button key={o} onClick={() => { setIrrigation(o); setScenarioConfirmed(false); setParsedScenario(null); }} className={cn("rounded-xl border py-2 text-sm font-medium transition-all", irrigation === o ? "border-forest-700 bg-forest-800 text-white" : "border-charcoal-200 hover:border-emerald-300")}>{o}</button>)}</div>
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={run} disabled={running || !changed || (parsedScenario ? !scenarioConfirmed : false)} className="btn-primary w-full py-3 text-[15px] disabled:cursor-not-allowed disabled:opacity-60">
                   {running ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Recalculating with model…</> : <><Play size={15} /> Simulate Risk</>}
                 </button>
-                {!changed && <p className="text-center text-xs text-charcoal-400">Adjust a slider or pick a preset to enable simulation.</p>}
+                {!changed && <p className="text-center text-xs text-charcoal-400">Adjust a climate input or write a natural-language scenario to enable simulation.</p>}
                 {err && <p className="text-center text-xs text-red-600">{err}</p>}
               </div>
             )}
           </Card>
 
-          {/* Results */}
           <div className="space-y-6">
             {!f ? <CardSkeleton lines={6} className="min-h-[300px]" /> : !result ? (
               <Card className="min-h-[300px]">
@@ -141,7 +273,7 @@ function Simulator() {
                   <div>
                     <p className="label">Current TerraScore</p>
                     <p className="mt-1 text-sm text-charcoal-600">Baseline risk probability {fmt.pct(f.scoring.risk_probability * 100)} · predicted yield {fmt.num(f.scoring.predicted_yield, 2)} t/ha</p>
-                    <EmptyState title="No scenario simulated yet" detail="Set a scenario on the left and click Simulate Risk. The same trained model will re-score the farm." className="mt-2 p-4" />
+                    <EmptyState title="No scenario simulated yet" detail="Describe the climate shift or tweak the advanced controls. The trained model will re-score the farm using the existing prediction pipeline." className="mt-2 p-4" />
                   </div>
                 </div>
               </Card>
@@ -172,10 +304,7 @@ function Result({ r }: { r: WhatIfResponse }) {
   const levelChanged = r.baseline_risk_level !== r.new_risk_level;
 
   const summaryText = r.scenario_summary.join(", ");
-  const riskChangeText =
-    r.baseline_risk_level === r.new_risk_level
-      ? `remains ${r.new_risk_level}`
-      : `shifts from ${r.baseline_risk_level} to ${r.new_risk_level}`;
+  const riskChangeText = r.baseline_risk_level === r.new_risk_level ? `remains ${r.new_risk_level}` : `shifts from ${r.baseline_risk_level} to ${r.new_risk_level}`;
   const changeText = r.change >= 0 ? `+${Math.round(r.change)}` : `${Math.round(r.change)}`;
   const explanationSentence = `With simulated scenario (${summaryText}), predicted crop risk ${riskChangeText}. TerraScore adjusts by ${changeText} points (from ${r.baseline_terra_score} to ${r.new_terra_score}) with estimated yield impact of ${r.predicted_yield_impact_pct >= 0 ? "+" : ""}${r.predicted_yield_impact_pct.toFixed(1)}%.`;
 
