@@ -16,3 +16,8 @@ CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
 API_PREFIX = "/api"
 # Pluggable providers — swap "mock" for real integrations later
 WEATHER_PROVIDER = os.getenv("WEATHER_PROVIDER", "mock")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "offline").lower()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")

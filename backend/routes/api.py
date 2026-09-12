@@ -6,9 +6,17 @@ from typing import Optional
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.schemas.schemas import PredictRequest, PredictResponse, WhatIfRequest, WhatIfResponse
+from backend.schemas.schemas import (
+    CopilotRequest,
+    CopilotResponse,
+    PredictRequest,
+    PredictResponse,
+    WhatIfRequest,
+    WhatIfResponse,
+)
 from backend.services.data_service import store
 from backend.services import insight_service
+from backend.services.copilot_service import generate_copilot_response
 from backend.services.weather_service import get_weather_for_coordinates
 from predict import predict_risk  # ml/ is on sys.path via data_service
 
@@ -183,6 +191,20 @@ def weather(latitude: float = Query(..., ge=-90, le=90), longitude: float = Quer
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Live weather unavailable — showing historical/model data. {type(exc).__name__}")
+
+
+@router.post("/copilot", response_model=CopilotResponse)
+def copilot(req: CopilotRequest):
+    """Grounded climate assistant using the existing weather + model context."""
+    try:
+        return generate_copilot_response(
+            message=req.message,
+            role=req.role,
+            farm_id=req.farm_id,
+            location=req.location,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Climate Copilot unavailable right now. {type(exc).__name__}: {exc}")
 
 
 @router.get("/telemetry/{farm_id}")

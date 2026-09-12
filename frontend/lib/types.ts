@@ -102,3 +102,19 @@ export interface ModelExplanation {
 }
 
 export interface DemoData { demo_farm_id: string; farm: Farm; scoring: Scoring; trends: HistoryPoint[]; telemetry: Telemetry; summary: Summary; alerts: Alert[]; suggested_scenario: WhatIfRequest }
+
+export interface CopilotGrounding {
+  farm_id: string | null;
+  location: string | null;
+  terra_score: number | null;
+  risk_level: string | null;
+  weather: Record<string, string | number | null>;
+  top_risk_factors: string[];
+}
+
+export interface CopilotResponse {
+  provider: "offline" | "groq" | "gemini";
+  answer: string;
+  role: "farmer" | "lender" | "government";
+  grounding: CopilotGrounding;
+}

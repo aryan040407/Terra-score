@@ -23,6 +23,7 @@ import { RegionSelector } from "@/components/region/RegionSelector";
 import { RegionProvider } from "@/contexts/RegionContext";
 import { cn, DISCLAIMER } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { ClimateCopilot } from "@/components/copilot/ClimateCopilot";
 import {
   getSession,
   logout,
@@ -280,6 +281,7 @@ export function AppShell({
 
   return (
     <RegionProvider>
+      <ClimateCopilot role={session.role} />
       <div className="flex min-h-screen">
 
         {/* DESKTOP SIDEBAR */}

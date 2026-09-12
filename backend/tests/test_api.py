@@ -90,3 +90,17 @@ def test_weather_response_parsing():
     assert out["humidity"] == 59.0
     assert out["source"] == "Open-Meteo"
     assert out["weather_condition"] == "Clear sky"
+
+
+def test_climate_copilot_offline_fallback(client):
+    r = client.post("/api/copilot", json={
+        "message": "Punjab mein rainfall gir rahi hai, kya risk badh raha hai?",
+        "role": "farmer",
+        "farm_id": "FARM-001",
+        "location": "Ludhiana, Punjab",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["provider"] in {"offline", "groq", "gemini"}
+    assert "TerraScore" in body["answer"] or "risk" in body["answer"].lower()
+    assert body["grounding"]["farm_id"] == "FARM-001"

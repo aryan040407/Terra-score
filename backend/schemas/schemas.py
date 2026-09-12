@@ -87,3 +87,26 @@ class WhatIfResponse(BaseModel):
     top_changed_factors: list[ChangedFactor]
     top_risk_factors: list[FactorItem]
     positive_resilience_factors: list[FactorItem]
+
+
+class CopilotRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=1000)
+    role: Literal["farmer", "lender", "government"] = "farmer"
+    farm_id: Optional[str] = None
+    location: Optional[str] = None
+
+
+class CopilotGrounding(BaseModel):
+    farm_id: Optional[str]
+    location: Optional[str]
+    terra_score: Optional[int] = None
+    risk_level: Optional[str] = None
+    weather: dict
+    top_risk_factors: list[str]
+
+
+class CopilotResponse(BaseModel):
+    provider: str
+    answer: str
+    role: str
+    grounding: CopilotGrounding

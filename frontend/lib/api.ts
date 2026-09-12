@@ -1,4 +1,4 @@
-import type { Alert, DemoData, FarmDetail, FarmList, ModelExplanation, RegionsResponse, Scoring, Summary, Telemetry, WeatherResponse, WhatIfRequest, WhatIfResponse, HistoryPoint } from "./types";
+import type { Alert, CopilotResponse, DemoData, FarmDetail, FarmList, ModelExplanation, RegionsResponse, Scoring, Summary, Telemetry, WeatherResponse, WhatIfRequest, WhatIfResponse, HistoryPoint } from "./types";
 
 // Browser always uses relative /api (proxied by Next.js rewrites to FastAPI).
 const BASE = typeof window === "undefined" ? (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") : "";
@@ -42,5 +42,6 @@ export const api = {
   demo: () => request<DemoData>("/api/demo-data"),
   whatIf: (body: WhatIfRequest) => request<WhatIfResponse>("/api/what-if", { method: "POST", body: JSON.stringify(body) }),
   predict: (body: Record<string, unknown>) => request<Scoring>("/api/predict", { method: "POST", body: JSON.stringify(body) }),
+  copilot: (body: { message: string; role: "farmer" | "lender" | "government"; farm_id?: string; location?: string }) => request<CopilotResponse>("/api/copilot", { method: "POST", body: JSON.stringify(body) }),
   raw: (method: string, path: string, body?: string) => request<unknown>(path, { method, body: body && method !== "GET" ? body : undefined }),
 };
