@@ -166,7 +166,7 @@ function Dashboard() {
       <LiveTelemetry farmId={farmId} />
 
       {s && (
-        <Card title="Portfolio Risk Distribution" subtitle="Farms per TerraScore band" action={<SimTag text="Demo / Simulated Portfolio" />}>
+        <Card title="Portfolio Risk Distribution" subtitle="Farms per TerraScore band">
           <RiskDistribution data={s.risk_distribution} />
         </Card>
       )}
@@ -182,7 +182,7 @@ function LenderView({ s }: { s: NonNullable<ReturnType<typeof useApi<import("@/l
   const l = s.lender;
   return (
     <div className="space-y-6 animate-fadeUp">
-      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800"><Landmark size={14} /><span className="font-semibold">Lender View · Demo / Simulated Portfolio.</span> Notional exposure = area × expected yield × crop price. Not integrated with any bank.</div>
+      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800"><Landmark size={14} /><span className="font-semibold">Lender View.</span> Notional exposure = area × expected yield × crop price. Not integrated with any bank.</div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Portfolio Exposure" value={fmt.inr(l.portfolio_exposure_inr)} sub="notional, simulated" icon={Wallet} />
         <Stat label="Expected Loss" value={fmt.inr(l.expected_loss_inr)} sub={`${fmt.pct(l.expected_loss_ratio_pct, 2)} loss ratio`} icon={TrendingDown} tone="bad" />

@@ -329,16 +329,6 @@ export function AppShell({
                   {sidebarCollapsed ? <Menu size={18} /> : <X size={18} />}
                 </button>
 
-                <div className="hidden items-center gap-2 text-sm text-charcoal-500 sm:flex">
-                  <ShieldAlert
-                    size={14}
-                    className="text-amber-500"
-                  />
-
-                  <span className="hidden md:inline">
-                    Demo / Simulated Portfolio
-                  </span>
-                </div>
               </div>
 
               <div className="w-full max-w-[340px] lg:max-w-[420px]">
