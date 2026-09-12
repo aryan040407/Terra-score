@@ -60,8 +60,11 @@ export default function Landing() {
             {[["1,500", "synthetic farms scored"], ["13", "Indian states covered"], ["0–1000", "explainable score"]].map(([v, l]) => (
               <div key={l}><p className="text-2xl font-semibold tracking-tight text-charcoal-900">{v}</p><p className="text-xs text-charcoal-500">{l}</p></div>
             ))}
-          </div>
-        </div>
+          </div>          <div className="mt-8 rounded-2xl border border-forest-100 bg-forest-50/60 p-4 text-sm text-charcoal-700">
+            <p className="font-semibold text-charcoal-900">Built on climate, agricultural and machine-learning data.</p>
+            <p className="mt-1 text-charcoal-600">Weather, soil, crop and risk signals are combined into one transparent TerraScore signal.</p>
+            <Link href="/data-sources" className="mt-3 inline-flex items-center gap-2 text-forest-700 hover:underline">Explore our data <ArrowRight size={14} /></Link>
+          </div>        </div>
 
         {/* Hero visual: Climate data -> AI -> TerraScore -> Financial decisions */}
         <div className="relative animate-fadeUp [animation-delay:150ms]">

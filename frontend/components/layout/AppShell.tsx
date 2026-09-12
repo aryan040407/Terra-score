@@ -15,6 +15,7 @@ import {
   X,
   Play,
   ShieldAlert,
+  Database,
 } from "lucide-react";
 
 import { Logo } from "./Logo";
@@ -35,6 +36,7 @@ const NAV = {
     { href: "/regions", label: "Weather & Risk", icon: Map },
     { href: "/simulator", label: "What-If", icon: FlaskConical },
     { href: "/model", label: "Model Insights", icon: BrainCircuit },
+    { href: "/data-sources", label: "Data & Research", icon: Database },
   ],
   lender: [
     { href: "/lender", label: "Portfolio", icon: LayoutDashboard },
@@ -42,6 +44,7 @@ const NAV = {
     { href: "/regions", label: "Regional Exposure", icon: Map },
     { href: "/simulator", label: "Climate Scenarios", icon: FlaskConical },
     { href: "/model", label: "Model Insights", icon: BrainCircuit },
+    { href: "/data-sources", label: "Data & Research", icon: Database },
     { href: "/api-demo", label: "API Demo", icon: Code2 },
   ],
   government: [
@@ -50,6 +53,7 @@ const NAV = {
     { href: "/simulator", label: "Risk Map", icon: FlaskConical },
     { href: "/model", label: "Model Insights", icon: BrainCircuit },
     { href: "/farms", label: "Soil Intelligence", icon: Sprout },
+    { href: "/data-sources", label: "Data & Research", icon: Database },
   ],
 } as const;
 
