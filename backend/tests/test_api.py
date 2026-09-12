@@ -41,6 +41,13 @@ def test_model_metrics_present(client):
     m = client.get("/api/model/explanation").json(); assert 0.5 < m["metrics"]["roc_auc"] <= 1 and m["feature_importance"]
 
 
+def test_explainability_labels_are_available(client):
+    j = client.get("/api/demo-data").json()
+    labels = j["data_labels"]
+    assert any("Historical weather data" in label for label in labels)
+    assert any("ML model output" in label for label in labels)
+
+
 def test_weather_valid_coordinates(client):
     with patch("backend.services.weather_service.fetch_weather_from_provider", return_value={
         "temperature": 29.4,

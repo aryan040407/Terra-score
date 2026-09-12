@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { WeatherTrend } from "@/components/charts/charts";
+import { DataFreshness, DecisionSignal, ExplainScore, ModelConfidence, WhatChanged } from "@/components/explainability/ExplainScore";
 import { FactorBars } from "@/components/ui/FactorBars";
 import { Card, CardSkeleton, EmptyState, ErrorState, RiskBadge, SimTag, Stat } from "@/components/ui/primitives";
 import { useApi } from "@/hooks/useApi";
@@ -51,15 +52,23 @@ function FarmerPortal() {
 
   const recommendations = [
     score && score.risk_probability > 0.45
-      ? "Rainfall risk is elevated. Consider reviewing irrigation requirements and moisture retention before the next dry spell."
+      ? "Rainfall stress detected. Consider reviewing irrigation planning and soil moisture monitoring before the next dry spell."
       : "Current rainfall conditions remain manageable. Maintain irrigation timing and monitor soil moisture changes closely.",
     farm && farm.soil_health < 65
-      ? "Soil health is below the preferred threshold. Add organic matter and reduce stress on the root zone to support resilience."
-      : "Soil condition is stable. Continued nutrient tracking should keep the crop resilient through seasonal variability.",
+      ? "Soil health is below the preferred threshold. Continue moisture retention practices and schedule a field check."
+      : "Soil condition is stable. Continue routine monitoring to keep the crop resilient through seasonal variability.",
     score && score.predicted_yield_loss_pct > 0.1
-      ? "Crop risk is increasing due to rainfall deviation. Prioritise stress monitoring and protective agronomy."
-      : "Yield risk remains moderate. Maintain current monitoring cadence and keep an eye on rainfall signals.",
+      ? "Crop stress is elevated. Monitor the affected field more closely and adjust irrigation or crop protection practices as needed."
+      : "Yield risk remains moderate. Maintain the current monitoring cadence and watch rainfall signals.",
   ].filter(Boolean) as string[];
+
+  const observedChanges = demo.data?.scoring?.top_risk_factors?.map((factor) => ({
+    label: factor.label,
+    baseline: Number(factor.value.toFixed(2)),
+    scenario: Number(factor.value.toFixed(2)),
+    delta: 0,
+    direction: "up" as const,
+  })) ?? [];
 
   return (
     <div className="space-y-6">
@@ -81,7 +90,7 @@ function FarmerPortal() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-fadeUp">
           <Stat label="TerraScore" value={score ? score.terra_score : "Data unavailable"} sub={score ? score.risk_level : "Model output pending"} icon={Gauge} tone="good" />
           <Stat label="Risk probability" value={score ? `${(score.risk_probability * 100).toFixed(0)}%` : "Data unavailable"} sub={score ? "model-estimated" : "pending"} icon={ShieldAlert} tone="warn" />
-          <Stat label="Confidence" value={score ? `${(score.confidence * 100).toFixed(0)}%` : "Data unavailable"} sub="forecast confidence" icon={CheckCircle2} tone="good" />
+          <Stat label="Model confidence" value={score ? `${(score.confidence * 100).toFixed(0)}%` : "Data unavailable"} sub={score ? "actual model output" : "pending"} icon={CheckCircle2} tone="good" />
           <Stat label="Yield loss" value={score ? `${(score.predicted_yield_loss_pct * 100).toFixed(1)}%` : "Data unavailable"} sub="expected impact" icon={Droplets} tone="bad" />
         </div>
       )}
@@ -188,26 +197,21 @@ function FarmerPortal() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
-        <Card title="Risk factors" subtitle="Most important drivers behind the current TerraScore" icon={AlertTriangle}>
-          {riskFactors.length ? (
-            <FactorBars factors={riskFactors.slice(0, 4)} tone="risk" />
+        <Card title="Why this score?" subtitle="Model-derived drivers for the current TerraScore" icon={AlertTriangle}>
+          {score && riskFactors.length ? (
+            <ExplainScore score={score.terra_score} riskLevel={score.risk_level} factors={riskFactors.slice(0, 4)} />
           ) : (
-            <EmptyState title="Risk factor data unavailable" detail="The model has not generated feature contribution data yet." />
+            <EmptyState title="Detailed explanation unavailable" detail="The score itself is available, but the current model driver breakdown is not populated." />
           )}
         </Card>
 
-        <Card title="What if rainfall changes?" subtitle="Model-backed climate scenario analysis" icon={Lightbulb}>
-          <div className="space-y-4">
-            <p className="text-sm text-charcoal-600">See how rainfall and climate changes could affect your crop risk and expected yield.</p>
-            <Link href="/simulator" className="btn-primary inline-flex items-center gap-2">
-              Run What-If Analysis <ArrowRight size={14} />
-            </Link>
-          </div>
+        <Card title="What changed?" subtitle="Deterministic changes from the current scenario data" icon={Lightbulb}>
+          <WhatChanged changes={observedChanges} />
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Recommendations" subtitle="Data-informed next steps" icon={CheckCircle2}>
+        <Card title="Recommended action" subtitle="Based on the current risk factors" icon={CheckCircle2}>
           {recommendations.length ? (
             <div className="space-y-3">
               {recommendations.map((item, i) => (
@@ -220,6 +224,20 @@ function FarmerPortal() {
           ) : (
             <EmptyState title="No recommendations available" detail="The model data does not currently show actionable deviations." />
           )}
+        </Card>
+
+        <Card title="Data status" subtitle="Clear source and freshness labels" icon={ShieldAlert}>
+          <DataFreshness
+            weatherStatus={liveWeather.data ? "Updated recently" : "Historical weather data"}
+            modelStatus={score ? "Historical dataset" : "Model output pending"}
+            scenarioStatus={"Scenario calculated now"}
+          />
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Model confidence" subtitle="Actual value from the trained model" icon={CheckCircle2}>
+          {score ? <ModelConfidence confidence={score.confidence} /> : <EmptyState title="Confidence unavailable" detail="The current prediction response does not include a valid confidence value." />}
         </Card>
 
         <Card title="Alerts" subtitle="Relevant climate and agronomic signals" icon={ShieldAlert}>

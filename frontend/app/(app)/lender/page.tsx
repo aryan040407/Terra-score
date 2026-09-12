@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Banknote, Landmark, MapPinned, ShieldAlert, TrendingDown, Wallet } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { RiskDistribution, SimpleBars } from "@/components/charts/charts";
+import { DecisionSignal, DataFreshness } from "@/components/explainability/ExplainScore";
 import { Card, CardSkeleton, EmptyState, ErrorState, RiskBadge, SimTag, Stat } from "@/components/ui/primitives";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
@@ -21,8 +22,11 @@ function LenderPortal() {
   const summary = useApi("summary", api.summary, { ttl: 60_000 });
   const farms = useApi("farms-portfolio", () => api.farms({ limit: 8 }), { ttl: 60_000 });
 
-  const riskSignal = summary.data && summary.data.high_risk_pct > 0.35 ? "HIGH RISK" : summary.data && summary.data.high_risk_pct > 0.18 ? "MODERATE RISK" : "LOW RISK";
+  const riskSignal = summary.data && summary.data.high_risk_pct > 0.35 ? "HIGH CLIMATE RISK" : summary.data && summary.data.high_risk_pct > 0.18 ? "MODERATE CLIMATE RISK" : "LOW CLIMATE RISK";
   const portfolioExposure = summary.data?.lender.portfolio_exposure_inr ?? 0;
+  const avgScore = summary.data?.average_terra_score ?? 0;
+  const lendersDrivers = ["rainfall stress", "soil moisture", "crop risk"];
+  const action = avgScore < 600 ? "Consider enhanced climate-risk monitoring." : "Continue standard monitoring.";
 
   return (
     <div className="space-y-6">
@@ -56,13 +60,10 @@ function LenderPortal() {
             </Card>
 
             <Card title="Climate risk signal" subtitle="Risk signal derived from portfolio TerraScore" icon={TrendingDown}>
-              <div className="space-y-4">
-                <p className="text-3xl font-semibold tracking-tight text-charcoal-900">{riskSignal}</p>
-                <p className="text-sm text-charcoal-600">TerraScore indicates elevated climate exposure for a meaningful share of the portfolio. Review the highest-risk farms before credit decisions are finalised.</p>
-                <div className="rounded-xl border border-charcoal-100 bg-charcoal-50 p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">Portfolio exposure</p>
-                  <p className="mt-1 text-lg font-semibold text-charcoal-900">₹{portfolioExposure.toLocaleString("en-IN")}</p>
-                </div>
+              <DecisionSignal title="CLIMATE-ADJUSTED RISK SIGNAL" signal={riskSignal} drivers={lendersDrivers} action={action} tone={avgScore < 600 ? "warn" : "good"} />
+              <div className="mt-4 rounded-xl border border-charcoal-100 bg-charcoal-50 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-charcoal-400">Portfolio exposure</p>
+                <p className="mt-1 text-lg font-semibold text-charcoal-900">₹{portfolioExposure.toLocaleString("en-IN")}</p>
               </div>
             </Card>
           </div>
@@ -112,14 +113,19 @@ function LenderPortal() {
             </Card>
           </div>
 
-          <Card title="Climate scenario" subtitle="Use the simulator to stress-test the portfolio" icon={ArrowRight}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="max-w-xl text-sm text-charcoal-600">Run climate scenario analysis to understand how rainfall stress or temperature shocks could affect the current portfolio.</p>
-              <Link href="/simulator" className="btn-primary inline-flex items-center gap-2">
-                Run climate scenario <ArrowRight size={14} />
-              </Link>
-            </div>
-          </Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card title="Data status" subtitle="Source and freshness labels for the decision signal" icon={TrendingDown}>
+              <DataFreshness weatherStatus={"Live weather scenario input"} modelStatus={"Historical dataset"} scenarioStatus={"Scenario calculated now"} />
+            </Card>
+            <Card title="Climate scenario" subtitle="Use the simulator to stress-test the portfolio" icon={ArrowRight}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="max-w-xl text-sm text-charcoal-600">Run climate scenario analysis to understand how rainfall stress or temperature shocks could affect the current portfolio.</p>
+                <Link href="/simulator" className="btn-primary inline-flex items-center gap-2">
+                  Run climate scenario <ArrowRight size={14} />
+                </Link>
+              </div>
+            </Card>
+          </div>
         </>
       ) : null}
     </div>

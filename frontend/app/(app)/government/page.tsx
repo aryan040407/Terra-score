@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { AlertTriangle, ArrowRight, BarChart3, CloudRain, Droplets, Globe2, MapPinned, ShieldAlert, Sprout, TrendingDown } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { TerraScoreTrend } from "@/components/charts/charts";
+import { DataFreshness, DecisionSignal } from "@/components/explainability/ExplainScore";
 import { Card, CardSkeleton, EmptyState, ErrorState, SimTag, Stat } from "@/components/ui/primitives";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
@@ -60,6 +61,9 @@ function GovernmentPortal() {
 
   const worstRegion = priorityRegions[0];
   const mostAtRiskState = stateSummary[0];
+  const interventionPriority = worstRegion && worstRegion.average_terra_score < 500 ? "HIGH" : worstRegion && worstRegion.average_terra_score < 700 ? "MEDIUM" : "LOW";
+  const govtDrivers = ["Rainfall stress", "Soil moisture", "Crop risk"];
+  const govtAction = interventionPriority === "HIGH" ? "irrigation planning" : interventionPriority === "MEDIUM" ? "advisory outreach" : "monitoring";
   const climateAverage = regionList.length
     ? regionList.reduce((acc, r) => ({
         avg_rainfall: acc.avg_rainfall + r.avg_rainfall,
@@ -107,21 +111,15 @@ function GovernmentPortal() {
               </div>
             </Card>
 
-            <Card title="Priority regions" subtitle="Districts with the lowest average TerraScore in the current view" icon={ShieldAlert}>
-              {priorityRegions.length ? (
-                <div className="space-y-3">
-                  {priorityRegions.map((r, index) => (
-                    <div key={`${r.state}-${r.district}`} className="rounded-xl border border-charcoal-100 bg-charcoal-50 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-charcoal-900">{index === 0 ? "Priority 1" : index === 1 ? "Priority 2" : index === 2 ? "Priority 3" : `Priority ${index + 1}`} · {r.district}</p>
-                          <p className="mt-1 text-xs text-charcoal-500">{r.state} · {r.farms} farms · {r.dominant_crop}</p>
-                        </div>
-                        <span className="text-lg font-semibold tabular-nums text-charcoal-900">{Math.round(r.average_terra_score)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <Card title="Regional intervention priority" subtitle="Based on current regional risk data" icon={ShieldAlert}>
+              {worstRegion ? (
+                <DecisionSignal
+                  title="REGIONAL INTERVENTION PRIORITY"
+                  signal={interventionPriority}
+                  drivers={govtDrivers}
+                  action={govtAction}
+                  tone={interventionPriority === "HIGH" ? "warn" : interventionPriority === "MEDIUM" ? "neutral" : "good"}
+                />
               ) : (
                 <EmptyState title="No regional priority data" detail="No region records are available in the current dataset." />
               )}
@@ -224,6 +222,12 @@ function GovernmentPortal() {
               )}
             </Card>
 
+            <Card title="Data status" subtitle="Source and freshness for the regional view" icon={ShieldAlert}>
+              <DataFreshness weatherStatus={"Historical weather data"} modelStatus={"Historical dataset"} scenarioStatus={"Calculated now"} />
+            </Card>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-1">
             <Card title="Regional alerts" subtitle="Signals from the model and current data" icon={ShieldAlert}>
               {alerts.loading ? (
                 <CardSkeleton lines={3} />

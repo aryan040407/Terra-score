@@ -140,6 +140,12 @@ def model_explanation():
         {"range": "0–199", "level": "Critical Risk"},
     ]
     meta["explanation_label"] = "Model-derived feature importance"
+    meta["data_labels"] = [
+        "Historical agricultural data",
+        "Historical weather data",
+        "Live weather scenario input",
+        "ML model output",
+    ]
     return meta
 
 
@@ -204,4 +210,11 @@ def demo_data():
         "alerts": insight_service.generate_alerts(6),
         "suggested_scenario": {"farm_id": farm_id, "rainfall_change_pct": -20, "temperature_change_c": 2, "soil_moisture_change_pct": -15},
         "data_source": "Simulated / synthetic demo data",
+        "data_labels": [
+            "Historical agricultural data",
+            "Historical weather data",
+            "Live weather scenario input",
+            "ML model output",
+            "Scenario output",
+        ],
     }
